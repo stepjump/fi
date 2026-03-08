@@ -18,7 +18,18 @@
 # [Github] stepjump@naver.com
 # Repository ==> stock_info
 # https://stockinfo-o4ubhhwjex3cxshshbzgei.streamlit.app/
+#
 # ========================================================================
+# # git commit, push
+# git add .
+# git commit -m "update app"
+# git push origin main
+
+# # 초기화
+# git pull origin main --rebase
+# git push origin main
+# ========================================================================
+
 
 import streamlit as st
 import sqlite3
