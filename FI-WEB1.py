@@ -2,6 +2,9 @@
 # [FI.db sqlite 파일 만들기]
 # FI_0001.py, FI_0002.py, FI_0001.py 사용하여 실행파일 만들기
 # pyinstaller --onefile FI_0001.py
+#
+# [requirements.txt 파일 만들기]
+# pip freeze > requirements.txt
 # ------------------------------------------------------------------------
 # FI_0001.exe 실행    ===> daily_prices 테이블 생성
 # FI_0002.exe 실행    ===> daily_prices2 테이블 생성
@@ -35,7 +38,14 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 import os
-import time
+import pytz
+from datetime import datetime
+
+# 한국 시간대 객체 생성
+kst = pytz.timezone('Asia/Seoul')
+
+# 현재 시간 가져오기
+now = datetime.now(kst)
 
 # 페이지 설정
 st.set_page_config(layout="wide", page_title="가치투자 주식 대시보드")
@@ -93,7 +103,7 @@ else:
         st.subheader("📌 주요 가치 지표")
         col1, col2, col3, col4, col5 = st.columns(5)
         with col1:
-            st.metric("현재가 [" + time.strftime('%Y.%m.%d - %H:%M') + "]", f"{stock_info['close']:,}")
+            st.metric("현재가 [" + now.strftime('%Y-%m-%d %H:%M') + "]", f"{stock_info['close']:,}")
         with col2:
             st.metric("PER", f"{stock_info['PER']:.2f}")
         with col3:
