@@ -31,6 +31,10 @@ def init_db():
 
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
+
+      # 1. 기존 테이블이 있다면 삭제 (초기화 시)
+    cursor.execute("DROP TABLE IF EXISTS daily_prices")
+
     cursor.execute('''    
                    CREATE TABLE IF NOT EXISTS daily_prices  
                    (
