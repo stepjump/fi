@@ -34,6 +34,7 @@ def get_data():
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     db_path = os.path.join(BASE_DIR, 'FI.db')
 
+
     # conn = sqlite3.connect('FI.db')  # 본인의 db 파일명으로 수정하세요\
     conn = sqlite3.connect(db_path)  # 본인의 db 파일명으로 수정하세요
     query = "SELECT * FROM daily_total_info"
