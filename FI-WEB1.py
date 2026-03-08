@@ -32,7 +32,6 @@ st.set_page_config(layout="wide", page_title="가치투자 주식 대시보드")
 def get_data():
     # 이 파일(FI-WEB1.py)이 있는 절대 경로를 구함
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    # DB 파일의 전체 경로를 만
     db_path = os.path.join(BASE_DIR, 'FI.db')
 
     # conn = sqlite3.connect('FI.db')  # 본인의 db 파일명으로 수정하세요\
