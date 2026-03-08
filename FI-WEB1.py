@@ -35,6 +35,7 @@ import streamlit as st
 import sqlite3
 import pandas as pd
 import os
+import time
 
 # 페이지 설정
 st.set_page_config(layout="wide", page_title="가치투자 주식 대시보드")
@@ -92,7 +93,7 @@ else:
         st.subheader("📌 주요 가치 지표")
         col1, col2, col3, col4, col5 = st.columns(5)
         with col1:
-            st.metric("현재가", f"{stock_info['close']:,}")
+            st.metric("현재가 [" + time.strftime('%Y.%m.%d - %H:%M') + "]", f"{stock_info['close']:,}")
         with col2:
             st.metric("PER", f"{stock_info['PER']:.2f}")
         with col3:
