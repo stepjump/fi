@@ -16,18 +16,19 @@
 # streamlit run FI-WEB-0001.py
 # ========================================================================
 # ========================================================================
-# [배포]
+# [배포정보]
 # 사이트 https://share.streamlit.io/
 # [Github] stepjump@naver.com
 # Repository ==> stock_info
 # https://stockinfo-o4ubhhwjex3cxshshbzgei.streamlit.app/
-#
 # ========================================================================
+# ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+# [배포 하는법]
 # # git commit, push
 # git add .
 # git commit -m "update app"
 # git push origin main
-
+# ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
 # # 초기화
 # git pull origin main --rebase
 # git push origin main
@@ -41,23 +42,53 @@ import os
 import pytz
 from datetime import datetime
 import pytz
+import streamlit as st
+
+# ==================================================================================
+# 서비스 접속시 비밀번호 인증 
+# ==================================================================================
+# 1. 세션 상태에 인증 여부 저장
+if 'authenticated' not in st.session_state:
+    st.session_state.authenticated = False
+
+def check_password():
+    # 2. 비밀번호 입력받기
+    password = st.text_input("비밀번호를 입력하세요:", type="password")
+    if password == "1234": # 여기에 원하시는 비밀번호 설정
+        st.session_state.authenticated = True
+        st.rerun() # 인증 성공 시 화면 새로고침
+    elif password != "":
+        st.error("비밀번호가 틀렸습니다.")
+        st.stop() # 인증 실패 시 아래 코드 실행 중단
+
+# 3. 인증되지 않았다면 로그인 화면만 보여줌
+if not st.session_state.authenticated:
+    check_password()
+    st.stop() # 이후 내용 표시 중단
+
+# 4. 인증 성공 시 여기에 원래 만드신 웹 앱 코드를 작성하세요
+st.title("환영합니다!")
+st.write("이제 서비스가 표시됩니다.")
+# ==================================================================================
 
 
-# # 한국 시간대 객체 생성
-# kst = pytz.timezone('Asia/Seoul')
 
-# # 현재 시간 가져오기
-# now = datetime.now(kst)
 
+
+# ==================================================================================
 # 파일 수정한 시간 구하기
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 program_path = os.path.join(BASE_DIR, 'FI-WEB1.py')
 timestamp = os.path.getmtime(program_path)
 last_modified_date = f"[프로그램 수정시간 : {datetime.fromtimestamp(timestamp, tz=pytz.timezone('Asia/Seoul')).strftime('%Y-%m-%d %H:%M')}]"
+# ==================================================================================
 
+# ==================================================================================
 # 페이지 설정
 st.set_page_config(layout="wide", page_title="가치투자 주식 대시보드")
+# ==================================================================================
 
+# ==================================================================================
 # DB 연결 함수
 def get_data():
     # 이 파일(FI-WEB1.py)이 있는 절대 경로를 구함
@@ -70,9 +101,10 @@ def get_data():
     df = pd.read_sql(query, conn)
     conn.close()
     return df
+# ==================================================================================
 
 
-
+# ==================================================================================
 # 데이터 로드
 df = get_data()
 
@@ -134,4 +166,4 @@ else:
 
     else:
         st.info("왼쪽 사이드바에서 종목을 선택해 주세요.")
-
+# ==================================================================================
