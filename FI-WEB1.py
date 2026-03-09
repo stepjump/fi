@@ -54,7 +54,7 @@ if 'authenticated' not in st.session_state:
 def check_password():
     # 2. 비밀번호 입력받기
     password = st.text_input("비밀번호를 입력하세요:", type="password")
-    if password == "1234": # 여기에 원하시는 비밀번호 설정
+    if password == "4978": # 여기에 원하시는 비밀번호 설정
         st.session_state.authenticated = True
         st.rerun() # 인증 성공 시 화면 새로고침
     elif password != "":
