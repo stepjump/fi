@@ -40,12 +40,15 @@ import pandas as pd
 import os
 import pytz
 from datetime import datetime
+import pytz
 
-# 한국 시간대 객체 생성
-kst = pytz.timezone('Asia/Seoul')
 
-# 현재 시간 가져오기
-now = datetime.now(kst)
+# # 한국 시간대 객체 생성
+# kst = pytz.timezone('Asia/Seoul')
+
+# # 현재 시간 가져오기
+# now = datetime.now(kst)
+last_modified_date = "현재시각 : ["
 
 # 페이지 설정
 st.set_page_config(layout="wide", page_title="가치투자 주식 대시보드")
@@ -56,6 +59,9 @@ def get_data():
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     db_path = os.path.join(BASE_DIR, 'FI.db')
 
+    # 파일 수정한 시간 구하기
+    timestamp = os.path.getmtime(db_path)
+    last_modified_date = last_modified_date + datetime.fromtimestamp(timestamp, tz=pytz.timezone("Asia/Seoul")) + "]"
 
     # conn = sqlite3.connect('FI.db')  # 본인의 db 파일명으로 수정하세요\
     conn = sqlite3.connect(db_path)  # 본인의 db 파일명으로 수정하세요
@@ -63,6 +69,8 @@ def get_data():
     df = pd.read_sql(query, conn)
     conn.close()
     return df
+
+
 
 # 데이터 로드
 df = get_data()
@@ -97,13 +105,13 @@ else:
         stock_info = df[df['ticker'] == selected_ticker].iloc[0]
         history_info = df[df['ticker'] == selected_ticker].sort_values(by='date', ascending=False)
 
-        st.title(f"📈 {target_stock} 분석 리포트")
+        st.title(f"📈 {target_stock} 분석 리포트 " + last_modified_date)
 
         # 상단: 가치투자 주요 지표
         st.subheader("📌 주요 가치 지표")
         col1, col2, col3, col4, col5 = st.columns(5)
         with col1:
-            st.metric("현재가 [" + now.strftime('%Y-%m-%d %H:%M') + "]", f"{stock_info['close']:,}")
+            st.metric("현재가", f"{stock_info['close']:,}")
         with col2:
             st.metric("PER", f"{stock_info['PER']:.2f}")
         with col3:
