@@ -42,6 +42,63 @@ import pytz
 from datetime import datetime
 import pytz
 import streamlit as st
+import yfinance as yf
+from ANALYZE import run_analysis # 분석 로직이 담긴 함수를 import
+ 
+
+# ==================================================================================
+# 서비스 접속시 비밀번호 인증 
+# ==================================================================================
+# 1. 세션 상태에 인증 여부 저장
+if 'authenticated' not in st.session_state:
+    st.session_state.authenticated = False
+
+def check_password():
+    # 2. 비밀번호 입력받기
+    password = st.text_input("비밀번호를 입력하세요:", type="password")
+    if password == "4978": # 여기에 원하시는 비밀번호 설정
+        st.session_state.authenticated = True
+        st.rerun() # 인증 성공 시 화면 새로고침
+    elif password != "":
+        st.error("비밀번호가 틀렸습니다.")
+        st.stop() # 인증 실패 시 아래 코드 실행 중단
+
+# 3. 인증되지 않았다면 로그인 화면만 보여줌
+if not st.session_state.authenticated:
+    check_password()
+    st.stop() # 이후 내용 표시 중단
+
+# 4. 인증 성공 시 여기에 원래 만드신 웹 앱 코드를 작성하세요
+st.title("환영합니다!")
+st.write("이제 서비스가 표시됩니다.")
+# ==================================================================================
+
+# ==================================================================================
+# 분석 페이지로 이동
+# ==================================================================================
+# 1. 팝업 창 정의
+@st.dialog("종목 분석 시스템", width="large")
+def show_analysis_modal():
+    st.write("### 50개 종목 데이터 분석 중...")
+    # 여기서 ANALYZE.py의 로직 실행
+    run_analysis()
+    
+    if st.button("닫기"):
+        st.rerun()
+
+# 2. 메인 페이지의 빨간색 버튼
+if st.button("분석 페이지로 이동", type="primary"):
+    # 스타일을 위한 마크다운 (빨간색 강조)
+    st.markdown("""
+        <style>
+        div.stButton > button:first-child {
+            background-color: #FF4B4B;
+            color: white;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    show_analysis_modal()
+# ==================================================================================   
 
 
 # ==================================================================================
@@ -71,36 +128,6 @@ with col2:
 
 st.divider() # 하단 구분선
 # ==================================================================================
-
-# ==================================================================================
-# 서비스 접속시 비밀번호 인증 
-# ==================================================================================
-# 1. 세션 상태에 인증 여부 저장
-if 'authenticated' not in st.session_state:
-    st.session_state.authenticated = False
-
-def check_password():
-    # 2. 비밀번호 입력받기
-    password = st.text_input("비밀번호를 입력하세요:", type="password")
-    if password == "4978": # 여기에 원하시는 비밀번호 설정
-        st.session_state.authenticated = True
-        st.rerun() # 인증 성공 시 화면 새로고침
-    elif password != "":
-        st.error("비밀번호가 틀렸습니다.")
-        st.stop() # 인증 실패 시 아래 코드 실행 중단
-
-# 3. 인증되지 않았다면 로그인 화면만 보여줌
-if not st.session_state.authenticated:
-    check_password()
-    st.stop() # 이후 내용 표시 중단
-
-# 4. 인증 성공 시 여기에 원래 만드신 웹 앱 코드를 작성하세요
-st.title("환영합니다!")
-st.write("이제 서비스가 표시됩니다.")
-# ==================================================================================
-
-
-
 
 
 # ==================================================================================
