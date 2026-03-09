@@ -48,7 +48,13 @@ import pytz
 
 # # 현재 시간 가져오기
 # now = datetime.now(kst)
-last_modified_date = "현재시각 : ["
+
+# 파일 수정한 시간 구하기
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+program_path = os.path.join(BASE_DIR, 'FI-WEB1.py')
+timestamp = os.path.getmtime(program_path)
+last_modified_date = "[프로그램 수정시간 : " + datetime.fromtimestamp(timestamp, tz=pytz.timezone("Asia/Seoul")) + "]"
+
 
 # 페이지 설정
 st.set_page_config(layout="wide", page_title="가치투자 주식 대시보드")
@@ -58,11 +64,7 @@ def get_data():
     # 이 파일(FI-WEB1.py)이 있는 절대 경로를 구함
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     db_path = os.path.join(BASE_DIR, 'FI.db')
-
-    # 파일 수정한 시간 구하기
-    timestamp = os.path.getmtime(db_path)
-    last_modified_date = last_modified_date + datetime.fromtimestamp(timestamp, tz=pytz.timezone("Asia/Seoul")) + "]"
-
+    
     # conn = sqlite3.connect('FI.db')  # 본인의 db 파일명으로 수정하세요\
     conn = sqlite3.connect(db_path)  # 본인의 db 파일명으로 수정하세요
     query = "SELECT * FROM daily_total_info"
