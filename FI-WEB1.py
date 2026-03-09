@@ -24,7 +24,6 @@
 # ========================================================================
 # ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
 # [배포 하는법]
-# # git commit, push
 # git add .
 # git commit -m "update app"
 # git push origin main
@@ -43,6 +42,35 @@ import pytz
 from datetime import datetime
 import pytz
 import streamlit as st
+
+
+# ==================================================================================
+# 한국 현재시간, 미국 현재시간 표시
+# ==================================================================================
+# 1. 시간대 설정
+kst = pytz.timezone('Asia/Seoul')
+est = pytz.timezone('US/Eastern')  # 미국 동부 기준 (뉴욕 등)
+
+# 2. 현재 시간 가져오기
+now_kst = datetime.now(kst)
+now_est = datetime.now(est)
+
+# 3. 시간 표시 형식 지정 (년-월-일 시:분:초)
+time_format = '%Y-%m-%d %H:%M:%S'
+
+# 4. 화면 레이아웃 구성
+col1, col2 = st.columns(2)
+
+with col1:
+    st.write("### 한국 시간 (KST)")
+    st.info(now_kst.strftime(time_format))
+
+with col2:
+    st.write("### 미국 시간 (EST)")
+    st.info(now_est.strftime(time_format))
+
+st.divider() # 하단 구분선
+# ==================================================================================
 
 # ==================================================================================
 # 서비스 접속시 비밀번호 인증 
