@@ -53,8 +53,7 @@ import pytz
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 program_path = os.path.join(BASE_DIR, 'FI-WEB1.py')
 timestamp = os.path.getmtime(program_path)
-last_modified_date = "[프로그램 수정시간 : " + datetime.fromtimestamp(timestamp, tz=pytz.timezone("Asia/Seoul")) + "]"
-
+last_modified_date = f"[프로그램 수정시간 : {datetime.fromtimestamp(timestamp, tz=pytz.timezone('Asia/Seoul')).strftime('%Y-%m-%d %H:%M')}]"
 
 # 페이지 설정
 st.set_page_config(layout="wide", page_title="가치투자 주식 대시보드")
