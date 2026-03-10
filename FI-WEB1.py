@@ -34,6 +34,7 @@
 # ========================================================================
 
 
+import subprocess
 import sys
 import streamlit as st
 import sqlite3
@@ -49,6 +50,7 @@ import yfinance as yf
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from ANALYZE import run_analysis # 분석 로직이 담긴 함수를 import
  
+
 
 # ==================================================================================
 # 서비스 접속시 비밀번호 인증 
@@ -103,6 +105,82 @@ if st.button("분석 페이지로 이동", type="primary"):
     """, unsafe_allow_html=True)
     show_analysis_modal()
 # ==================================================================================   
+
+
+# ==================================================================================
+# 주식정보 FI.db 업데이트 FI_0001.py, FI_0002.py, FI_0003.py 실행
+# ==================================================================================
+def run_external_script_1():
+    try:
+        # 'python' 명령어를 통해 FI_0001.py 실행
+        # capture_output=True는 실행 결과를 받아오기 위함
+        # text=True는 결과를 문자열로 변환
+        result = subprocess.run(["python", "FI_0001.py"], capture_output=True, text=True, check=True)
+        
+        # 실행 성공 시 결과 리턴
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        # 실행 실패 시 에러 메시지 리턴
+        return f"오류 발생: {e.stderr}"
+
+if st.button("DB 생성(step#1)"):
+    with st.spinner("DB 생성(step#1) 실행 중..."):
+        message = run_external_script_1()
+        
+        # 결과를 메시지 창으로 출력
+        if "오류" in message:
+            st.error(message)
+        else:
+            st.success("실행 완료!")
+            st.info(message) # FI_0001.py에서 출력한 모든 내용이 표시됨
+
+def run_external_script_2():
+    try:
+        # 'python' 명령어를 통해 FI_0002.py 실행
+        # capture_output=True는 실행 결과를 받아오기 위함
+        # text=True는 결과를 문자열로 변환
+        result = subprocess.run(["python", "FI_0002.py"], capture_output=True, text=True, check=True)
+        
+        # 실행 성공 시 결과 리턴
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        # 실행 실패 시 에러 메시지 리턴
+        return f"오류 발생: {e.stderr}"
+
+if st.button("DB 생성(step#2)"):
+    with st.spinner("DB 생성(step#2) 실행 중..."):
+        message = run_external_script_1()
+        
+        # 결과를 메시지 창으로 출력
+        if "오류" in message:
+            st.error(message)
+        else:
+            st.success("실행 완료!")
+            st.info(message) # FI_0002.py에서 출력한 모든 내용이 표시됨
+
+def run_external_script_3():
+    try:
+        # 'python' 명령어를 통해 FI_0003.py 실행
+        # capture_output=True는 실행 결과를 받아오기 위함
+        # text=True는 결과를 문자열로 변환
+        result = subprocess.run(["python", "FI_0003.py"], capture_output=True, text=True, check=True)
+        
+        # 실행 성공 시 결과 리턴
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        # 실행 실패 시 에러 메시지 리턴
+        return f"오류 발생: {e.stderr}"
+
+if st.button("DB 생성(step#3)"):
+    with st.spinner("DB 생성(step#3) 실행 중..."):
+        message = run_external_script_1()
+        
+        # 결과를 메시지 창으로 출력
+        if "오류" in message:
+            st.error(message)
+        else:
+            st.success("실행 완료!")
+            st.info(message) # FI_0003.py에서 출력한 모든 내용이 표시됨
 
 
 # ==================================================================================
