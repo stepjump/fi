@@ -113,12 +113,14 @@ if st.button("분석 페이지로 이동", type="primary"):
 # ==================================================================================
 # 주식정보 FI.db 업데이트 FI_0001.py, FI_0002.py, FI_0003.py 실행
     # ==================================================================================
-def execute_python_script(script_path):
-    # 시스템 파이썬 인터프리터 경로를 사용하여 해당 파일 실행
-    command = [sys.executable, script_path]
+def run_external_script_1():
+   
+    # 시스템의 파이썬 인터프리터를 사용하여 스크립트 실행
+    # sys.executable은 현재 실행 중인 파이썬 경로를 자동으로 잡아줍니다.
+    command = [sys.executable, "-m", "streamlit", "run", "FI_0001.py", "--server.headless", "true"]
     
     try:
-        # 캡처 모드 실행
+        # 쉘 환경에서 실행하고 출력과 에러를 캡처
         result = subprocess.run(
             command, 
             capture_output=True, 
@@ -127,26 +129,82 @@ def execute_python_script(script_path):
         )
         return True, result.stdout
     except subprocess.CalledProcessError as e:
-        # 스크립트 내부에서 발생한 에러(stderr) 반환
-        return False, e.stderr
-
-# --- UI 부분 ---
-if st.button("DB 생성(step#1)"):
-    # 배포 환경을 고려한 절대 경로 설정
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    target_script = os.path.join(base_dir, "FI_0001.py")
+        # 실행 실패 시 에러 메시지 반환
+        return False, f"에러 발생: {e.stderr}"
     
+
+if st.button("DB 생성(step#1)"):
     with st.spinner("DB 생성(step#1) 실행 중..."):
-        success, output = execute_python_script(target_script)
+        success, output = run_external_script_1()
         
         if success:
-            st.success("실행 완료!")
-            st.text(output)  # print()로 찍은 결과가 여기에 출력됨
+            st.success("실행 성공!")
+            st.info(output) # 표준 출력(stdout) 내용을 화면에 표시
         else:
             st.error("실행 실패")
-            st.code(output)  # 에러 메시지 상세 출력
-   
-  
+            st.code(output) # 에러 메시지를 코드 블록으로 강조
+
+def run_external_script_2():
+    try:
+        # 'python' 명령어를 통해 FI_0002.py 실행
+        # capture_output=True는 실행 결과를 받아오기 위함
+        # text=True는 결과를 문자열로 변환
+
+        # st.write(f"실행하려는 파일 경로: {script_path}")
+        # st.write(f"파일 존재 여부: {os.path.exists(script_path)}")
+        # 현재 실행 중인 파일(FI-WEB1.py)의 디렉토리를 기준으로 경로 설정
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        script_path = os.path.join(base_dir, "FI_0002.py")
+
+        result = subprocess.run(["python3", script_path], capture_output=True, text=True, check=True)
+        
+        # 실행 성공 시 결과 리턴
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        # 실행 실패 시 에러 메시지 리턴
+        return f"오류 발생: {e.stderr}"
+
+if st.button("DB 생성(step#2)"):
+    with st.spinner("DB 생성(step#2) 실행 중..."):
+        message = run_external_script_1()
+        
+        # 결과를 메시지 창으로 출력
+        if "오류" in message:
+            st.error(message)
+        else:
+            st.success("실행 완료!")
+            st.info(message) # FI_0002.py에서 출력한 모든 내용이 표시됨
+
+def run_external_script_3():
+    try:
+        # 'python' 명령어를 통해 FI_0003.py 실행
+        # capture_output=True는 실행 결과를 받아오기 위함
+        # text=True는 결과를 문자열로 변환
+
+        # st.write(f"실행하려는 파일 경로: {script_path}")
+        # st.write(f"파일 존재 여부: {os.path.exists(script_path)}")
+        # 현재 실행 중인 파일(FI-WEB1.py)의 디렉토리를 기준으로 경로 설정
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        script_path = os.path.join(base_dir, "FI_0002.py")
+
+        result = subprocess.run(["python3", script_path], capture_output=True, text=True, check=True)
+        
+        # 실행 성공 시 결과 리턴
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        # 실행 실패 시 에러 메시지 리턴
+        return f"오류 발생: {e.stderr}"
+
+if st.button("DB 생성(step#3)"):
+    with st.spinner("DB 생성(step#3) 실행 중..."):
+        message = run_external_script_1()
+        
+        # 결과를 메시지 창으로 출력
+        if "오류" in message:
+            st.error(message)
+        else:
+            st.success("실행 완료!")
+            st.info(message) # FI_0003.py에서 출력한 모든 내용이 표시됨
 
 
 # ==================================================================================
