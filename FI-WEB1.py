@@ -115,6 +115,8 @@ def run_external_script_1():
         # 'python' 명령어를 통해 FI_0001.py 실행
         # capture_output=True는 실행 결과를 받아오기 위함
         # text=True는 결과를 문자열로 변환
+        # 현재 파일이 있는 폴더를 파이썬 경로에 추가
+        sys.path.append(os.path.dirname(os.path.abspath(__file__)))
         result = subprocess.run(["python", "FI_0001.py"], capture_output=True, text=True, check=True)
         
         # 실행 성공 시 결과 리턴
