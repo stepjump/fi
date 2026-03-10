@@ -115,9 +115,14 @@ def run_external_script_1():
         # 'python' 명령어를 통해 FI_0001.py 실행
         # capture_output=True는 실행 결과를 받아오기 위함
         # text=True는 결과를 문자열로 변환
-        # 현재 파일이 있는 폴더를 파이썬 경로에 추가
-        sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-        result = subprocess.run(["python", "FI_0001.py"], capture_output=True, text=True, check=True)
+        
+        # st.write(f"실행하려는 파일 경로: {script_path}")
+        # st.write(f"파일 존재 여부: {os.path.exists(script_path)}")
+        # 현재 실행 중인 파일(FI-WEB1.py)의 디렉토리를 기준으로 경로 설정
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        script_path = os.path.join(base_dir, "FI_0001.py")
+
+        result = subprocess.run(["python3", script_path], capture_output=True, text=True, check=True)
         
         # 실행 성공 시 결과 리턴
         return result.stdout
@@ -141,7 +146,14 @@ def run_external_script_2():
         # 'python' 명령어를 통해 FI_0002.py 실행
         # capture_output=True는 실행 결과를 받아오기 위함
         # text=True는 결과를 문자열로 변환
-        result = subprocess.run(["python", "FI_0002.py"], capture_output=True, text=True, check=True)
+
+        # st.write(f"실행하려는 파일 경로: {script_path}")
+        # st.write(f"파일 존재 여부: {os.path.exists(script_path)}")
+        # 현재 실행 중인 파일(FI-WEB1.py)의 디렉토리를 기준으로 경로 설정
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        script_path = os.path.join(base_dir, "FI_0002.py")
+
+        result = subprocess.run(["python3", script_path], capture_output=True, text=True, check=True)
         
         # 실행 성공 시 결과 리턴
         return result.stdout
@@ -165,7 +177,14 @@ def run_external_script_3():
         # 'python' 명령어를 통해 FI_0003.py 실행
         # capture_output=True는 실행 결과를 받아오기 위함
         # text=True는 결과를 문자열로 변환
-        result = subprocess.run(["python", "FI_0003.py"], capture_output=True, text=True, check=True)
+
+        # st.write(f"실행하려는 파일 경로: {script_path}")
+        # st.write(f"파일 존재 여부: {os.path.exists(script_path)}")
+        # 현재 실행 중인 파일(FI-WEB1.py)의 디렉토리를 기준으로 경로 설정
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        script_path = os.path.join(base_dir, "FI_0002.py")
+
+        result = subprocess.run(["python3", script_path], capture_output=True, text=True, check=True)
         
         # 실행 성공 시 결과 리턴
         return result.stdout
