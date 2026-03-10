@@ -6,13 +6,30 @@ from sqlalchemy import URL, create_engine
 def run_analysis():
 
 
-    # 데이터베이스 연결
-    # 객체를 사용하여 안전하게 생성
-    db_url = URL.create(
-        drivername="sqlite",
-        database="FI.db"  # 여기에 실제 파일명을 입력하세요
-    )
-    engine = create_engine(db_url)
+    # # 데이터베이스 연결
+    # # 객체를 사용하여 안전하게 생성
+    # db_url = URL.create(
+    #     drivername="sqlite",
+    #     database="FI.db"  # 여기에 실제 파일명을 입력하세요
+    # )
+
+    # # 프로젝트 루트 경로 확보
+    # base_dir = os.path.dirname(os.path.abspath(__file__))
+    # db_path = os.path.join(base_dir, 'FI.db')
+                       
+    # engine = create_engine(db_path)
+
+
+
+    # 1. 파일의 절대 경로를 가져와서 DB 파일 위치를 확실히 지정
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    db_file = os.path.join(current_dir, 'FI.db')
+    
+    # 2. 확실한 URL 문자열 생성
+    connection_string = f"sqlite:///{db_file}"
+    
+    # 3. 엔진 생성
+    engine = create_engine(connection_string)
 
 
     query = "SELECT * FROM daily_total_info"
