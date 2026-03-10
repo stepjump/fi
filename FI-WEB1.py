@@ -42,7 +42,6 @@ import pandas as pd
 import os
 import pytz
 from datetime import datetime
-import pytz
 import streamlit as st
 import yfinance as yf
 
@@ -124,10 +123,10 @@ def run_external_script_1():
         base_dir = os.path.dirname(os.path.abspath(__file__))
         script_path = os.path.join(base_dir, "FI_0001.py")
 
-        st.write(f"실행하려는 파일 경로: {script_path}")
-        st.write(f"파일 존재 여부: {os.path.exists(script_path)}")
-        st.write(f"base_dir: {base_dir}")
-        st.write(f"os.path.abspath(__file__): {os.path.abspath(__file__)}")
+        # st.write(f"실행하려는 파일 경로: {script_path}")
+        # st.write(f"파일 존재 여부: {os.path.exists(script_path)}")
+        # st.write(f"base_dir: {base_dir}")
+        # st.write(f"os.path.abspath(__file__): {os.path.abspath(__file__)}")
 
         result = subprocess.run(["python3", script_path], capture_output=True, text=True, check=True)
         
