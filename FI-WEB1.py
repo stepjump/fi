@@ -112,7 +112,7 @@ if st.button("분석 페이지로 이동", type="primary"):
 
 # ==================================================================================
 # 주식정보 FI.db 업데이트 FI_0001.py, FI_0002.py, FI_0003.py 실행
-    # ==================================================================================
+# ==================================================================================
 def execute_python_script(script_path):
     # 시스템 파이썬 인터프리터 경로를 사용하여 해당 파일 실행
     command = [sys.executable, script_path]
@@ -146,8 +146,35 @@ if st.button("DB 생성(step#1)"):
             st.error("실행 실패")
             st.code(output)  # 에러 메시지 상세 출력
    
-  
+if st.button("DB 생성(step#2)"):
+    # 배포 환경을 고려한 절대 경로 설정
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    target_script = os.path.join(base_dir, "FI_0002.py")
+    
+    with st.spinner("DB 생성(step#2) 실행 중..."):
+        success, output = execute_python_script(target_script)
+        
+        if success:
+            st.success("실행 완료!")
+            st.text(output)  # print()로 찍은 결과가 여기에 출력됨
+        else:
+            st.error("실행 실패")
+            st.code(output)  # 에러 메시지 상세 출력  
 
+if st.button("DB 생성(step#3)"):
+    # 배포 환경을 고려한 절대 경로 설정
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    target_script = os.path.join(base_dir, "FI_0003.py")
+    
+    with st.spinner("DB 생성(step#3) 실행 중..."):
+        success, output = execute_python_script(target_script)
+        
+        if success:
+            st.success("실행 완료!")
+            st.text(output)  # print()로 찍은 결과가 여기에 출력됨
+        else:
+            st.error("실행 실패")
+            st.code(output)  # 에러 메시지 상세 출력  
 
 # ==================================================================================
 # 한국 현재시간, 미국 현재시간 표시
