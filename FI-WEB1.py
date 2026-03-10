@@ -119,8 +119,12 @@ def run_external_script_1():
         # st.write(f"실행하려는 파일 경로: {script_path}")
         # st.write(f"파일 존재 여부: {os.path.exists(script_path)}")
         # 현재 실행 중인 파일(FI-WEB1.py)의 디렉토리를 기준으로 경로 설정
+
         base_dir = os.path.dirname(os.path.abspath(__file__))
         script_path = os.path.join(base_dir, "FI_0001.py")
+
+        st.write(f"실행하려는 파일 경로: {script_path}")
+        st.write(f"파일 존재 여부: {os.path.exists(script_path)}")
 
         result = subprocess.run(["python3", script_path], capture_output=True, text=True, check=True)
         
