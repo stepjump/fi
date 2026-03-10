@@ -16,6 +16,8 @@ def run_analysis():
     # Windows/Linux 상관없이 호환되는 sqlite:/// 경로 방식
     db_url = f"sqlite:///{db_path}"
     
+    st.write(db_url)
+
     try:
         engine = create_engine(db_url)
         # 데이터 가져오기
