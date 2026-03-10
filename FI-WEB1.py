@@ -46,6 +46,7 @@ import pytz
 import streamlit as st
 import yfinance as yf
 
+
 # 현재 파일이 있는 폴더를 파이썬 경로에 추가
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from ANALYZE import run_analysis # 분석 로직이 담긴 함수를 import
