@@ -141,7 +141,7 @@ if st.button("DB 생성(step#1)"):
         
         if success:
             st.success("실행 완료!")
-            st.text(output)  # print()로 찍은 결과가 여기에 출력됨
+            # st.text(output)  # print()로 찍은 결과가 여기에 출력됨
         else:
             st.error("실행 실패")
             st.code(output)  # 에러 메시지 상세 출력
@@ -156,7 +156,7 @@ if st.button("DB 생성(step#2)"):
         
         if success:
             st.success("실행 완료!")
-            st.text(output)  # print()로 찍은 결과가 여기에 출력됨
+            # st.text(output)  # print()로 찍은 결과가 여기에 출력됨
         else:
             st.error("실행 실패")
             st.code(output)  # 에러 메시지 상세 출력  
@@ -171,7 +171,7 @@ if st.button("DB 생성(step#3)"):
         
         if success:
             st.success("실행 완료!")
-            st.text(output)  # print()로 찍은 결과가 여기에 출력됨
+            # st.text(output)  # print()로 찍은 결과가 여기에 출력됨
         else:
             st.error("실행 실패")
             st.code(output)  # 에러 메시지 상세 출력  
