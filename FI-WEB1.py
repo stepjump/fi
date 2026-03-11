@@ -118,72 +118,6 @@ if st.button("분석 페이지로 이동", type="primary"):
 # ==================================================================================   
 
 
-# # ==================================================================================
-# # 주식정보 FI.db 업데이트 FI_0001.py, FI_0002.py, FI_0003.py 실행
-# # ==================================================================================
-# def execute_python_script(script_path):
-#     # 시스템 파이썬 인터프리터 경로를 사용하여 해당 파일 실행
-#     command = [sys.executable, script_path]
-    
-#     try:
-#         # 캡처 모드 실행
-#         result = subprocess.run(
-#             command, 
-#             capture_output=True, 
-#             text=True, 
-#             check=True
-#         )
-#         return True, result.stdout
-#     except subprocess.CalledProcessError as e:
-#         # 스크립트 내부에서 발생한 에러(stderr) 반환
-#         return False, e.stderr
-
-# # --- UI 부분 ---
-# if st.button("DB 생성(step#1)"):
-#     # 배포 환경을 고려한 절대 경로 설정
-#     base_dir = os.path.dirname(os.path.abspath(__file__))
-#     target_script = os.path.join(base_dir, "FI_0001.py")
-    
-#     with st.spinner("DB 생성(step#1) 실행 중..."):
-#         success, output = execute_python_script(target_script)
-        
-#         if success:
-#             st.success("실행 완료!")
-#             # st.text(output)  # print()로 찍은 결과가 여기에 출력됨
-#         else:
-#             st.error("실행 실패")
-#             st.code(output)  # 에러 메시지 상세 출력
-   
-# if st.button("DB 생성(step#2)"):
-#     # 배포 환경을 고려한 절대 경로 설정
-#     base_dir = os.path.dirname(os.path.abspath(__file__))
-#     target_script = os.path.join(base_dir, "FI_0002.py")
-    
-#     with st.spinner("DB 생성(step#2) 실행 중..."):
-#         success, output = execute_python_script(target_script)
-        
-#         if success:
-#             st.success("실행 완료!")
-#             # st.text(output)  # print()로 찍은 결과가 여기에 출력됨
-#         else:
-#             st.error("실행 실패")
-#             st.code(output)  # 에러 메시지 상세 출력  
-
-# if st.button("DB 생성(step#3)"):
-#     # 배포 환경을 고려한 절대 경로 설정
-#     base_dir = os.path.dirname(os.path.abspath(__file__))
-#     target_script = os.path.join(base_dir, "FI_0003.py")
-    
-#     with st.spinner("DB 생성(step#3) 실행 중..."):
-#         success, output = execute_python_script(target_script)
-        
-#         if success:
-#             st.success("실행 완료!")
-#             # st.text(output)  # print()로 찍은 결과가 여기에 출력됨
-#         else:
-#             st.error("실행 실패")
-#             st.code(output)  # 에러 메시지 상세 출력  
-
 # ==================================================================================
 # 한국 현재시간, 미국 현재시간 표시
 # ==================================================================================
@@ -310,6 +244,15 @@ else:
 # ==================================================================================
 # 주식정보 FI.db 업데이트 FI_0001.py, FI_0002.py, FI_0003.py 실행
 # ==================================================================================
+def upload_to_github():
+    try:
+        subprocess.run(["git", "add", "FI.db"], check=True)
+        subprocess.run(["git", "commit", "-m", "Auto-update FI.db"], check=True)
+        subprocess.run(["git", "push"], check=True)
+        print("GitHub에 DB 업로드 완료!")
+    except Exception as e:
+        print(f"업로드 실패: {e}")
+
 def execute_python_script(script_path):
     # 시스템 파이썬 인터프리터 경로를 사용하여 해당 파일 실행
     command = [sys.executable, script_path]
@@ -337,6 +280,9 @@ if st.button("DB 생성(step#1)"):
         success, output = execute_python_script(target_script)
         
         if success:
+            # DB 생성/수정 로직이 끝난 후 github 갱신 호출
+            upload_to_github()
+            
             st.success("실행 완료!")            
             with st.expander("상세 로그 보기 (클릭)"):
                 st.code(output, language='bash')
@@ -354,6 +300,9 @@ if st.button("DB 생성(step#2)"):
         success, output = execute_python_script(target_script)
         
         if success:
+            # DB 생성/수정 로직이 끝난 후 github 갱신 호출
+            upload_to_github()
+
             st.success("실행 완료!")
             with st.expander("상세 로그 보기 (클릭)"):
                 st.code(output, language='bash')
@@ -371,6 +320,9 @@ if st.button("DB 생성(step#3)"):
         success, output = execute_python_script(target_script)
         
         if success:
+            # DB 생성/수정 로직이 끝난 후 github 갱신 호출
+            upload_to_github()
+            
             st.success("실행 완료!")
             with st.expander("상세 로그 보기 (클릭)"):
                 st.code(output, language='bash')
