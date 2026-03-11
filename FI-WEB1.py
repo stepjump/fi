@@ -244,12 +244,12 @@ else:
 # ==================================================================================
 # 주식정보 FI.db 업데이트 FI_0001.py, FI_0002.py, FI_0003.py 실행
 # ==================================================================================
-def upload_to_github():
+def upload_to_github(step_num):
     try:
         subprocess.run(["git", "add", "FI.db"], check=True)
         subprocess.run(["git", "commit", "-m", "Auto-update FI.db"], check=True)
         subprocess.run(["git", "push"], check=True)
-        print("GitHub에 DB 업로드 완료!")
+        print("GitHub에 DB 업로드 완료! [" + step_num + "]")
     except Exception as e:
         print(f"업로드 실패: {e}")
 
@@ -281,7 +281,7 @@ if st.button("DB 생성(step#1)"):
         
         if success:
             # DB 생성/수정 로직이 끝난 후 github 갱신 호출
-            upload_to_github()
+            upload_to_github("step#1")
             
             st.success("실행 완료!")            
             with st.expander("상세 로그 보기 (클릭)"):
@@ -301,7 +301,7 @@ if st.button("DB 생성(step#2)"):
         
         if success:
             # DB 생성/수정 로직이 끝난 후 github 갱신 호출
-            upload_to_github()
+            upload_to_github("step#2")
 
             st.success("실행 완료!")
             with st.expander("상세 로그 보기 (클릭)"):
@@ -321,8 +321,8 @@ if st.button("DB 생성(step#3)"):
         
         if success:
             # DB 생성/수정 로직이 끝난 후 github 갱신 호출
-            upload_to_github()
-            
+            upload_to_github("step#3")
+
             st.success("실행 완료!")
             with st.expander("상세 로그 보기 (클릭)"):
                 st.code(output, language='bash')
