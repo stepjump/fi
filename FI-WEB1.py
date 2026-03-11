@@ -24,6 +24,7 @@
 # ========================================================================
 # ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
 # [배포 하는법]
+# git pull
 # git add .
 # git commit -m "update app"
 # git push origin main
@@ -31,6 +32,13 @@
 # # 초기화
 # git pull origin main --rebase
 # git push origin main
+# ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+# [배포 시도시 충돌났을때 처리]
+# git stash
+# git pull origin main
+# git stash pop
+# git push -f origin main
+# ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
 # ========================================================================
 # streamlit 터미널에서 실행
 # streamlit run FI-WEB1.py --server.enableCORS false --server.enableXsrfProtection false
