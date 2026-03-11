@@ -249,9 +249,11 @@ def upload_to_github(step_num):
         subprocess.run(["git", "add", "FI.db"], check=True)
         subprocess.run(["git", "commit", "-m", "Auto-update FI.db" + "(" + step_num + ")"], check=True)
         subprocess.run(["git", "push"], check=True)
-        print("GitHub에 DB 업로드 완료! [" + step_num + "]")        
+        print("GitHub에 DB 업로드 완료! [" + step_num + "]")
+        return True
     except Exception as e:
         print(f"업로드 실패: {e}")
+        return False
 
 def execute_python_script(script_path):
     # 시스템 파이썬 인터프리터 경로를 사용하여 해당 파일 실행
@@ -281,8 +283,12 @@ if st.button("DB 생성(step#1)"):
         
         if success:
             # DB 생성/수정 로직이 끝난 후 github 갱신 호출
-            upload_to_github("step#1")
-            
+            success = upload_to_github("step#1")
+            if success:
+                st.success("GitHub에 DB 업로드 완료! [step#1]")  
+            else:
+                st.error("GitHub에 DB 업로드 실패!")
+
             st.success("실행 완료!")            
             with st.expander("상세 로그 보기 (클릭)"):
                 st.code(output, language='bash')
@@ -300,8 +306,12 @@ if st.button("DB 생성(step#2)"):
         success, output = execute_python_script(target_script)
         
         if success:
-            # DB 생성/수정 로직이 끝난 후 github 갱신 호출
-            upload_to_github("step#2")
+           # DB 생성/수정 로직이 끝난 후 github 갱신 호출
+            success = upload_to_github("step#2")
+            if success:
+                st.success("GitHub에 DB 업로드 완료! [step#2]")  
+            else:
+                st.error("GitHub에 DB 업로드 실패!")
 
             st.success("실행 완료!")
             with st.expander("상세 로그 보기 (클릭)"):
@@ -321,7 +331,11 @@ if st.button("DB 생성(step#3)"):
         
         if success:
             # DB 생성/수정 로직이 끝난 후 github 갱신 호출
-            upload_to_github("step#3")
+            success = upload_to_github("step#3")
+            if success:
+                st.success("GitHub에 DB 업로드 완료! [step#3]")  
+            else:
+                st.error("GitHub에 DB 업로드 실패!")
 
             st.success("실행 완료!")
             with st.expander("상세 로그 보기 (클릭)"):
