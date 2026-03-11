@@ -247,9 +247,9 @@ else:
 def upload_to_github(step_num):
     try:
         subprocess.run(["git", "add", "FI.db"], check=True)
-        subprocess.run(["git", "commit", "-m", "Auto-update FI.db"], check=True)
+        subprocess.run(["git", "commit", "-m", "Auto-update FI.db" + "(" + step_num + ")"], check=True)
         subprocess.run(["git", "push"], check=True)
-        print("GitHub에 DB 업로드 완료! [" + step_num + "]")
+        print("GitHub에 DB 업로드 완료! [" + step_num + "]")        
     except Exception as e:
         print(f"업로드 실패: {e}")
 
