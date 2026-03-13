@@ -12,6 +12,7 @@
 
 # =================================================================================================================================
 # 서버 실행 uvicorn server:app --reload
+# streamlit서버 실행 streamlit run FI-WEB1.py --server.enableCORS false --server.enableXsrfProtection false
 # 실행후 웹브라우져에서
 #
 # [로컬 개발PC 에서 테스트]
