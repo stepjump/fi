@@ -10,6 +10,24 @@
 # http://127.0.0.1:8000/stocks/AAPL?start_date=2026-01-01&end_date=2026-02-28
 # ============================================================================
 
+# =================================================================================================================================
+# 서버 실행 uvicorn server:app --reload
+# 실행후 웹브라우져에서
+#
+# [로컬 개발PC 에서 테스트]
+# http://127.0.0.1:8000/docs#
+# http://127.0.0.1:8000/stocks/AAPL?start_date=2026-01-01&end_date=2026-02-28   ===> 애플(APPL) 종목의 조회기간 동안 주식정보 조회
+#
+#
+# [https://share.streamlit.io/ 에서 테스트]
+# [개발uril]
+# https://share.streamlit.io/?aliId=eyJpIjoiZXc4S2ZPVElXR2hYRjBuTiIsInQiOiJKeEFMYWxRUkFwdEUzRk5IdzF1YStRPT0ifQ%253D%253D
+# https://studious-umbrella-7rwr7gjqwrgcx6g.github.dev/	<===코드스페이스 환경
+#
+#
+# https://studious-umbrella-7rwr7gjqwrgcx6g-8000.app.github.dev/docs#
+# https://studious-umbrella-7rwr7gjqwrgcx6g-8000.app.github.dev/stocks/AAPL?start_date=2025-01-01&end_date=2026-02-28
+# =================================================================================================================================
 
 
 from typing import Optional
