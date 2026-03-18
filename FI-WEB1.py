@@ -6,6 +6,12 @@
 # [requirements.txt 파일 만들기]
 # pip freeze > requirements.txt
 # ------------------------------------------------------------------------
+# DB방법1 : [로컬 pc에서 파이썬 3.12.10 개발환경에서 빌드후 실행화일 실행하여 FI.db 업데이트됨
+# DB방법2: python FI_0001.py 실행
+#          python FI_0002.py 실행
+#          python FI_0003.py 실행
+# ==>FI.db 업데이트됨
+# ==> GitHub 에 Push 작업필요]
 # FI_0001.exe 실행    ===> daily_prices 테이블 생성
 # FI_0002.exe 실행    ===> daily_prices2 테이블 생성
 # FI_0003.exe 실행    ===> daily_total_info 테이블 생성
