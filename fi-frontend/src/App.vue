@@ -35,7 +35,7 @@
         <el-table-column label="변동률" align="right" width="120">
           <template #default="scope">
             <span :class="scope.row.change >= 0 ? 'text-red' : 'text-blue'">
-              {{ scope.row.change >= 0 ? '+' : '' }}{{ scope.row.change.toFixed(2) }}%
+              {{ scope.row.change != null ? (scope.row.change >= 0 ? '+' : '') + scope.row.change.toFixed(2) + '%' : '-' }}              
             </span>
           </template>
         </el-table-column>
