@@ -63,6 +63,19 @@ import pytz
 from datetime import datetime
 import streamlit as st
 import yfinance as yf
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware  # 1. 미들웨어 불러오기
+
+app = FastAPI()
+
+# 2. CORS 설정 추가: 모든 접속을 허용하는 '마법의 코드'입니다.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # 모든 도메인(Codespaces, Vercel 등)에서 오는 요청을 허용
+    allow_credentials=True,
+    allow_methods=["*"],  # GET, POST 등 모든 통신 방식 허용
+    allow_headers=["*"],  # 모든 헤더 정보 허용
+)
 
 
 # 현재 파일이 있는 폴더를 파이썬 경로에 추가

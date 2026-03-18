@@ -28,6 +28,24 @@
 #
 # https://studious-umbrella-7rwr7gjqwrgcx6g-8000.app.github.dev/docs#
 # https://studious-umbrella-7rwr7gjqwrgcx6g-8000.app.github.dev/stocks/AAPL?start_date=2025-01-01&end_date=2026-02-28
+# ========================================================================
+# ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+# [배포 하는법]
+# git pull
+# git add .
+# git commit -m "update app"
+# git push origin main
+# ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+# # 초기화
+# git pull origin main --rebase
+# git push origin main
+# ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
+# [배포 시도시 충돌났을때 처리]
+# git stash
+# git pull origin main
+# git stash pop
+# git push -f origin main
+# ★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★★
 # =================================================================================================================================
 
 
@@ -78,10 +96,10 @@ app = FastAPI()
 # CORS 설정
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8000", "http://127.0.0.1:8000"],
+    allow_origins=["*"],  # 테스트를 위해 모든 도메인 허용
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # GET, POST 등 모든 메소드 허용
+    allow_headers=["*"],  # 모든 헤더 허용
 )
 
 def get_db():
