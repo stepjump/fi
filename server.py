@@ -134,25 +134,27 @@ def get_all_stocks(db: Session = Depends(get_db)):
     ).distinct().all()
 
     # 2. 리턴하는 리스트 컴프리헨션에도 해당 값들을 매핑해줍니다.
-    return {
-        "history": [
-            {
-                "ticker": s.ticker, 
-                "date": s.date, 
-                "name": s.name, 
-                "usd_price": s.usd_price, 
-                "krw_price": s.krw_price,
-                "per": s.per,
-                "pbr": s.pbr,
-                "psr": s.psr,
-                "pcr": s.pcr,
-                "roe": s.roe,
-                "eps": s.eps,
-                "peg": s.peg,
-                "dividend_yield": s.dividend_yield
-            } for s in stocks
-        ]
-    }
+    # return {
+    #     "history": [
+    #         {
+    #             "ticker": s.ticker, 
+    #             "date": s.date, 
+    #             "name": s.name, 
+    #             "usd_price": s.usd_price, 
+    #             "krw_price": s.krw_price,
+    #             "per": s.per,
+    #             "pbr": s.pbr,
+    #             "psr": s.psr,
+    #             "pcr": s.pcr,
+    #             "roe": s.roe,
+    #             "eps": s.eps,
+    #             "peg": s.peg,
+    #             "dividend_yield": s.dividend_yield
+    #         } for s in stocks
+    #     ]
+    # }
+    return [{"ticker": s.ticker, "date": s.date, "name": s.name, "usd_price": s.usd_price, "krw_price": s.krw_price, "per": s.per,
+                "pbr": s.pbr, "psr": s.psr, "pcr": s.pcr, "roe": s.roe, "eps": s.eps, "peg": s.peg, "dividend_yield": s.dividend_yield } for s in stocks]
 
 
 
