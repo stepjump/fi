@@ -71,24 +71,40 @@
             
             <el-table-column label="USD Price" width="110" align="right">
               <template #default="scope">
-                <span class="currency-usd">{{ formatCurrency(scope.row.usd_price || scope.row.price, '$') }}</span>
+                <span class="currency-usd">{{ formatCurrency(scope.row.usd_price || scope.row.USD_PRICE || scope.row.price, '$') }}</span>
               </template>
             </el-table-column>
 
             <el-table-column label="KRW Price" width="120" align="right">
               <template #default="scope">
-                <span class="currency-krw">{{ formatCurrency(scope.row.krw_price, '', '원') }}</span>
+                <span class="currency-krw">{{ formatCurrency(scope.row.krw_price || scope.row.KRW_PRICE, '', '원') }}</span>
               </template>
             </el-table-column>
 
-            <el-table-column prop="per" label="PER" width="80" align="right" sortable />
-            <el-table-column prop="pbr" label="PBR" width="80" align="right" sortable />
-            <el-table-column prop="psr" label="PSR" width="80" align="right" sortable />
-            <el-table-column prop="pcr" label="PCR" width="80" align="right" sortable />
-            <el-table-column prop="roe" label="ROE(%)" width="90" align="right" sortable />
-            <el-table-column prop="eps" label="EPS" width="100" align="right" sortable />
-            <el-table-column prop="peg" label="PEG" width="80" align="right" sortable />
-            <el-table-column prop="dividend_yield" label="Div.Y(%)" width="100" align="right" sortable />
+            <el-table-column label="PER" width="80" align="right" sortable>
+              <template #default="scope">{{ scope.row.per || scope.row.PER || '-' }}</template>
+            </el-table-column>
+            <el-table-column label="PBR" width="80" align="right" sortable>
+              <template #default="scope">{{ scope.row.pbr || scope.row.PBR || '-' }}</template>
+            </el-table-column>
+            <el-table-column label="PSR" width="80" align="right" sortable>
+              <template #default="scope">{{ scope.row.psr || scope.row.PSR || '-' }}</template>
+            </el-table-column>
+            <el-table-column label="PCR" width="80" align="right" sortable>
+              <template #default="scope">{{ scope.row.pcr || scope.row.PCR || '-' }}</template>
+            </el-table-column>
+            <el-table-column label="ROE(%)" width="90" align="right" sortable>
+              <template #default="scope">{{ scope.row.roe || scope.row.ROE || '-' }}</template>
+            </el-table-column>
+            <el-table-column label="EPS" width="100" align="right" sortable>
+              <template #default="scope">{{ scope.row.eps || scope.row.EPS || '-' }}</template>
+            </el-table-column>
+            <el-table-column label="PEG" width="80" align="right" sortable>
+              <template #default="scope">{{ scope.row.peg || scope.row.PEG || '-' }}</template>
+            </el-table-column>
+            <el-table-column label="Div.Y(%)" width="100" align="right" sortable>
+              <template #default="scope">{{ scope.row.dividend_yield || scope.row.DIVIDEND_YIELD || '-' }}</template>
+            </el-table-column>
           </el-table>
 
           <div class="pagination-container">
@@ -149,8 +165,9 @@ const API_URL = 'https://sj-fi.onrender.com/stocks';
 
 // --- 포맷팅 ---
 const formatCurrency = (val, prefix = '', suffix = '') => {
-  if (val === undefined || val === null) return prefix + ' - ' + suffix;
+  if (val === undefined || val === null || val === '') return prefix + ' - ' + suffix;
   const num = parseFloat(val);
+  if (isNaN(num)) return prefix + ' - ' + suffix;
   return `${prefix}${num.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}${suffix}`;
 };
 
@@ -164,17 +181,19 @@ const filteredData = computed(() => {
   return allRawData.value.filter(item => {
     const t = (item.ticker || item.Ticker || '').trim().toUpperCase();
     const d = item.date || item.Date || '';
-    const roe = parseFloat(item.roe || 0);
-    const per = parseFloat(item.per || 0);
+    
+    // 필터용 값 추출 (대소문자 무관)
+    const roeVal = parseFloat(item.roe || item.ROE || 0);
+    const perVal = parseFloat(item.per || item.PER || 0);
 
     if (finalStartDate.value && d < finalStartDate.value) return false;
     if (finalEndDate.value && d > finalEndDate.value) return false;
     if (finalSearchQuery.value && t !== finalSearchQuery.value) return false;
-    if (finalFilterBlueChip.value && roe < 15) return false;
-    if (finalFilterLowPer.value && (per <= 0 || per >= 15)) return false;
+    if (finalFilterBlueChip.value && roeVal < 15) return false;
+    if (finalFilterLowPer.value && (perVal <= 0 || perVal >= 15)) return false;
 
     return true;
-  }).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  }).sort((a, b) => (b.date || b.Date || '').localeCompare(a.date || a.Date || ''));
 });
 
 const paginatedData = computed(() => {
@@ -187,19 +206,19 @@ const exportToExcel = () => {
   if (filteredData.value.length === 0) return;
   const exportData = filteredData.value.map((item, index) => ({
     "No": index + 1,
-    "Ticker": item.ticker,
-    "Name": item.name,
-    "Date": item.date,
-    "Price(USD)": item.usd_price || item.price,
-    "Price(KRW)": item.krw_price,
-    "PER": item.per,
-    "PBR": item.pbr,
-    "PSR": item.psr,
-    "PCR": item.pcr,
-    "ROE(%)": item.roe,
-    "EPS": item.eps,
-    "PEG": item.peg,
-    "Div.Yield(%)": item.dividend_yield
+    "Ticker": item.ticker || item.Ticker,
+    "Name": item.name || item.NAME,
+    "Date": item.date || item.Date,
+    "Price(USD)": item.usd_price || item.USD_PRICE || item.price,
+    "Price(KRW)": item.krw_price || item.KRW_PRICE,
+    "PER": item.per || item.PER,
+    "PBR": item.pbr || item.PBR,
+    "PSR": item.psr || item.PSR,
+    "PCR": item.pcr || item.PCR,
+    "ROE(%)": item.roe || item.ROE,
+    "EPS": item.eps || item.EPS,
+    "PEG": item.peg || item.PEG,
+    "Div.Yield(%)": item.dividend_yield || item.DIVIDEND_YIELD
   }));
   const worksheet = XLSX.utils.json_to_sheet(exportData);
   const workbook = XLSX.utils.book_new();
@@ -235,7 +254,7 @@ const fetchStocks = async () => {
 const handleRowClick = (row) => {
   if (row) {
     selectedStock.value = row;
-    updateChart(row.ticker);
+    updateChart(row.ticker || row.Ticker);
   }
 };
 
@@ -245,25 +264,25 @@ const updateChart = (ticker) => {
   if (chartInstance) chartInstance.destroy();
 
   const history = allRawData.value
-    .filter(s => s.ticker === ticker)
-    .sort((a, b) => a.date.localeCompare(b.date))
-    .slice(-30); // 최근 30일 데이터
+    .filter(s => (s.ticker || s.Ticker) === ticker)
+    .sort((a, b) => (a.date || a.Date).localeCompare(b.date || b.Date))
+    .slice(-30);
 
   chartInstance = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: history.map(h => h.date),
+      labels: history.map(h => h.date || h.Date),
       datasets: [
         {
           label: 'KRW Price (원)',
-          data: history.map(h => h.krw_price || 0),
+          data: history.map(h => h.krw_price || h.KRW_PRICE || 0),
           borderColor: '#409eff',
           yAxisID: 'y-krw',
           tension: 0.3
         },
         {
           label: 'USD Price ($)',
-          data: history.map(h => h.usd_price || h.price || 0),
+          data: history.map(h => h.usd_price || h.USD_PRICE || h.price || 0),
           borderColor: '#67c23a',
           yAxisID: 'y-usd',
           tension: 0.3
