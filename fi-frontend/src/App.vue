@@ -52,13 +52,13 @@
             <el-table-column prop="name" label="Name" width="130" show-overflow-tooltip />
             <el-table-column prop="date" label="Date" width="110" sortable />
             
-            <el-table-column label="USD Price" width="130" align="right">
+            <el-table-column label="USD Price" width="120" align="right">
               <template #default="scope">
                 <span class="currency-usd">{{ formatCurrency(scope.row.usd_price || scope.row.price, '$') }}</span>
               </template>
             </el-table-column>
 
-            <el-table-column label="KRW Price" width="140" align="right">
+            <el-table-column label="KRW Price" width="130" align="right">
               <template #default="scope">
                 <span class="currency-krw">{{ formatCurrency(scope.row.krw_price, '', '원') }}</span>
               </template>
@@ -118,14 +118,14 @@ const finalFilterLowPer = ref(false);
 
 const API_URL = 'https://sj-fi.onrender.com/stocks';
 
-// 통화 포맷 함수 (콤마 + 소수점 4자리 + 단위)
+// 통화 포맷 함수: 소수점 2자리로 변경
 const formatCurrency = (val, prefix = '', suffix = '') => {
-  if (val === undefined || val === null || val === 0) return prefix + ' 0.0000 ' + suffix;
+  if (val === undefined || val === null || val === 0) return prefix + ' 0.00 ' + suffix;
   const num = parseFloat(val);
-  if (isNaN(num)) return prefix + ' 0.0000 ' + suffix;
+  if (isNaN(num)) return prefix + ' 0.00 ' + suffix;
   
-  // 천 단위 콤마와 소수점 4자리 처리
-  const parts = num.toFixed(4).split('.');
+  // toFixed(2)로 소수점 2자리 고정 및 천 단위 콤마 추가
+  const parts = num.toFixed(2).split('.');
   parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   
   return `${prefix}${parts.join('.')}${suffix}`;
@@ -237,7 +237,6 @@ onMounted(fetchStocks);
 .chart-container { height: 350px; }
 .canvas-wrapper { height: 280px; }
 .w-100 { width: 100%; }
-/* 통화 스타일 정의 */
 .currency-usd { color: #67c23a; font-weight: bold; }
 .currency-krw { color: #409eff; font-weight: bold; }
 </style>
