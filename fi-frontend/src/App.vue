@@ -90,7 +90,7 @@
             </el-table-column>
 
             <el-table-column label="PER" width="80" align="right" sortable>
-              <template #default="scope">{{ scope.row.per || scope.row.PER || '-' }}</template>
+              <template #default="scope">{{ scope.row.per || scope.row.Per || scope.row.PER }}</template>              
             </el-table-column>
             <el-table-column label="PBR" width="80" align="right" sortable>
               <template #default="scope">{{ scope.row.pbr || scope.row.PBR || '-' }}</template>
