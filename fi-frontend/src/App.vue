@@ -5,26 +5,26 @@
       
       <el-form class="filter-form" label-position="top">
         <el-divider content-position="left">조회 기간</el-divider>
-        <el-form-item label="시작일자">
-          <el-date-picker
-            v-model="startDate"
-            type="date"
-            placeholder="시작일 선택"
-            format="YYYY-MM-DD"
-            value-format="YYYY-MM-DD"
-            class="w-100"
-          />
-        </el-form-item>
-        <el-form-item label="종료일자">
-          <el-date-picker
-            v-model="endDate"
-            type="date"
-            placeholder="종료일 선택"
-            format="YYYY-MM-DD"
-            value-format="YYYY-MM-DD"
-            class="w-100"
-          />
-        </el-form-item>
+      <el-form-item label="시작일자">
+        <el-date-picker
+          v-model="startDate"
+          type="date"
+          placeholder="날짜 선택"
+          format="YYYY년 MM월 DD일" 
+          value-format="YYYY-MM-DD"
+          class="w-100"
+        />
+      </el-form-item>
+      <el-form-item label="종료일자">
+        <el-date-picker
+          v-model="endDate"
+          type="date"
+          placeholder="날짜 선택"
+          format="YYYY년 MM월 DD일"
+          value-format="YYYY-MM-DD"
+          class="w-100"
+        />
+      </el-form-item>
 
         <el-divider content-position="left">종목 선택</el-divider>
         <el-form-item label="특정 종목 필터">

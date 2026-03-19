@@ -1,15 +1,15 @@
-// src/main.js
 import { createApp } from 'vue'
 import App from './App.vue'
-import router from './router' // router가 있다면 유지
-
-// Element Plus 관련 추가
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
+// 한국어 로케일 추가
+import ko from 'element-plus/dist/locale/ko.mjs'
 
 const app = createApp(App)
 
-app.use(router) // router가 없다면 이 줄은 삭제
-app.use(ElementPlus) // Element Plus 사용 등록
+// locale: ko 설정을 추가합니다.
+app.use(ElementPlus, {
+  locale: ko,
+})
 
 app.mount('#app')
