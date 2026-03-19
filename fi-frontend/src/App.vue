@@ -1,5 +1,5 @@
 <template>
-  <el-container class="dashboard-wrapper" v-loading="loading" element-loading-text="FI 데이터를 가져오는 중...">
+  <el-container class="dashboard-wrapper" v-loading="loading" element-loading-text="데이터를 분석 중입니다...">
     <el-aside width="280px" class="sidebar">
       <div class="sidebar-header"><h2 class="brand">FI Analysis</h2></div>
       
@@ -21,7 +21,7 @@
 
         <el-divider content-position="left">가치투자 필터</el-divider>
         <el-form-item>
-          <el-checkbox v-model="tempFilterBlueChip">우량주 (ROE > 1.5)</el-checkbox>
+          <el-checkbox v-model="tempFilterBlueChip">우량주 (ROE > 15%)</el-checkbox>
           <el-checkbox v-model="tempFilterLowPer">저평가 (PER < 15)</el-checkbox>
         </el-form-item>
         
@@ -65,45 +65,53 @@
               </template>
             </el-table-column>
 
-            <el-table-column prop="ticker" label="Ticker" width="90" fixed sortable />
-            <el-table-column prop="name" label="Name" width="100" show-overflow-tooltip />
-            <el-table-column prop="date" label="Date" width="110" sortable />
+            <el-table-column label="Ticker" width="90" fixed sortable>
+              <template #default="scope">{{ scope.row.ticker || scope.row.Ticker || scope.row.TICKER }}</template>
+            </el-table-column>
+            
+            <el-table-column label="Name" width="120" show-overflow-tooltip>
+              <template #default="scope">{{ scope.row.name || scope.row.Name || scope.row.NAME }}</template>
+            </el-table-column>
+
+            <el-table-column label="Date" width="110" sortable>
+              <template #default="scope">{{ scope.row.date || scope.row.Date || scope.row.DATE }}</template>
+            </el-table-column>
             
             <el-table-column label="USD Price" width="110" align="right">
               <template #default="scope">
-                <span class="currency-usd">{{ formatCurrency(scope.row.usd_price, '$') }}</span>
+                <span class="currency-usd">{{ formatCurrency(scope.row.usd_price || scope.row.USD_PRICE || scope.row.price, '$') }}</span>
               </template>
             </el-table-column>
 
             <el-table-column label="KRW Price" width="120" align="right">
               <template #default="scope">
-                <span class="currency-krw">{{ formatCurrency(scope.row.krw_price, '', '원') }}</span>
+                <span class="currency-krw">{{ formatCurrency(scope.row.krw_price || scope.row.KRW_PRICE, '', '원') }}</span>
               </template>
             </el-table-column>
 
             <el-table-column label="PER" width="80" align="right" sortable>
-              <template #default="scope">{{ formatValue(scope.row.per) }}</template>
+              <template #default="scope">{{ scope.row.per || scope.row.PER || '-' }}</template>
             </el-table-column>
             <el-table-column label="PBR" width="80" align="right" sortable>
-              <template #default="scope">{{ formatValue(scope.row.pbr) }}</template>
+              <template #default="scope">{{ scope.row.pbr || scope.row.PBR || '-' }}</template>
             </el-table-column>
             <el-table-column label="PSR" width="80" align="right" sortable>
-              <template #default="scope">{{ formatValue(scope.row.psr) }}</template>
+              <template #default="scope">{{ scope.row.psr || scope.row.PSR || '-' }}</template>
             </el-table-column>
             <el-table-column label="PCR" width="80" align="right" sortable>
-              <template #default="scope">{{ formatValue(scope.row.pcr) }}</template>
+              <template #default="scope">{{ scope.row.pcr || scope.row.PCR || '-' }}</template>
             </el-table-column>
             <el-table-column label="ROE(%)" width="90" align="right" sortable>
-              <template #default="scope">{{ formatValue(scope.row.roe) }}</template>
+              <template #default="scope">{{ scope.row.roe || scope.row.ROE || '-' }}</template>
             </el-table-column>
-            <el-table-column label="EPS" width="80" align="right" sortable>
-              <template #default="scope">{{ formatValue(scope.row.eps) }}</template>
+            <el-table-column label="EPS" width="100" align="right" sortable>
+              <template #default="scope">{{ scope.row.eps || scope.row.EPS || '-' }}</template>
             </el-table-column>
             <el-table-column label="PEG" width="80" align="right" sortable>
-              <template #default="scope">{{ formatValue(scope.row.peg) }}</template>
+              <template #default="scope">{{ scope.row.peg || scope.row.PEG || '-' }}</template>
             </el-table-column>
             <el-table-column label="Div.Y(%)" width="100" align="right" sortable>
-              <template #default="scope">{{ formatValue(scope.row.dividend_yield) }}</template>
+              <template #default="scope">{{ scope.row.dividend_yield || scope.row.DIVIDEND_YIELD || '-' }}</template>
             </el-table-column>
           </el-table>
 
@@ -124,7 +132,7 @@
           <template #header>
             <div class="card-header">
               <span class="title-text">가격 추이 분석 (KRW / USD 비교)</span>
-              <el-tag v-if="selectedStock" type="info">{{ selectedStock.ticker }} 분석 중</el-tag>
+              <el-tag v-if="selectedStock" type="info">{{ selectedStock.ticker || selectedStock.Ticker }} 분석 중</el-tag>
             </div>
           </template>
           <div class="canvas-wrapper"><canvas id="mainPriceChart"></canvas></div>
@@ -162,40 +170,33 @@ const finalFilterLowPer = ref(false);
 
 const API_URL = 'https://sj-fi.onrender.com/stocks';
 
-// --- 유틸리티 함수 ---
 const formatCurrency = (val, prefix = '', suffix = '') => {
-  if (val === undefined || val === null || val === '') return '-';
-  return `${prefix}${parseFloat(val).toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}${suffix}`;
-};
-
-const formatValue = (val) => {
-  if (val === undefined || val === null || val === '') return '-';
+  if (val === undefined || val === null || val === '') return prefix + ' - ' + suffix;
   const num = parseFloat(val);
-  return isNaN(num) ? '-' : num.toFixed(2);
+  if (isNaN(num)) return prefix + ' - ' + suffix;
+  return `${prefix}${num.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}${suffix}`;
 };
 
-// --- 필터링 로직 ---
 const tickerList = computed(() => {
-  const tickers = allRawData.value.map(item => (item.ticker || '').trim().toUpperCase());
+  const tickers = allRawData.value.map(item => (item.ticker || item.Ticker || item.TICKER || '').trim().toUpperCase());
   return [...new Set(tickers)].filter(Boolean).sort();
 });
 
 const filteredData = computed(() => {
   return allRawData.value.filter(item => {
-    const t = (item.ticker || '').trim().toUpperCase();
-    const d = item.date || '';
-    const roeVal = parseFloat(item.roe || 0);
-    const perVal = parseFloat(item.per || 0);
+    const t = (item.ticker || item.Ticker || item.TICKER || '').trim().toUpperCase();
+    const d = item.date || item.Date || item.DATE || '';
+    const roeVal = parseFloat(item.roe || item.ROE || 0);
+    const perVal = parseFloat(item.per || item.PER || 0);
 
     if (finalStartDate.value && d < finalStartDate.value) return false;
     if (finalEndDate.value && d > finalEndDate.value) return false;
     if (finalSearchQuery.value && t !== finalSearchQuery.value) return false;
-    // 백엔드 데이터 기준에 맞춰 필터 조정 (ROE 1.5202 등)
-    if (finalFilterBlueChip.value && roeVal < 1.5) return false;
+    if (finalFilterBlueChip.value && roeVal < 15) return false;
     if (finalFilterLowPer.value && (perVal <= 0 || perVal >= 15)) return false;
 
     return true;
-  }).sort((a, b) => b.date.localeCompare(a.date));
+  }).sort((a, b) => (b.date || b.Date || '').localeCompare(a.date || a.Date || ''));
 });
 
 const paginatedData = computed(() => {
@@ -203,18 +204,28 @@ const paginatedData = computed(() => {
   return filteredData.value.slice(start, start + pageSize.value);
 });
 
-// --- 데이터 패칭 (가장 중요) ---
-const fetchStocks = async () => {
-  loading.value = true;
-  try {
-    const response = await axios.get(API_URL);
-    // [수정] 보내주신 JSON 구조에 맞춰 .history 사용
-    allRawData.value = response.data.history || []; 
-  } catch (error) {
-    console.error("데이터 로드 오류:", error);
-  } finally {
-    loading.value = false;
-  }
+const exportToExcel = () => {
+  if (filteredData.value.length === 0) return;
+  const exportData = filteredData.value.map((item, index) => ({
+    "No": index + 1,
+    "Ticker": item.ticker || item.Ticker || item.TICKER,
+    "Name": item.name || item.Name || item.NAME,
+    "Date": item.date || item.Date || item.DATE,
+    "Price(USD)": item.usd_price || item.USD_PRICE || item.price,
+    "Price(KRW)": item.krw_price || item.KRW_PRICE,
+    "PER": item.per || item.PER,
+    "PBR": item.pbr || item.PBR,
+    "PSR": item.psr || item.PSR,
+    "PCR": item.pcr || item.PCR,
+    "ROE(%)": item.roe || item.ROE,
+    "EPS": item.eps || item.EPS,
+    "PEG": item.peg || item.PEG,
+    "Div.Yield(%)": item.dividend_yield || item.DIVIDEND_YIELD
+  }));
+  const worksheet = XLSX.utils.json_to_sheet(exportData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "StockData");
+  XLSX.writeFile(workbook, `FI_Data_${new Date().toISOString().slice(0, 10)}.xlsx`);
 };
 
 const applyFilters = () => {
@@ -224,23 +235,28 @@ const applyFilters = () => {
   finalSearchQuery.value = tempSearchQuery.value;
   finalFilterBlueChip.value = tempFilterBlueChip.value;
   finalFilterLowPer.value = tempFilterLowPer.value;
-};
-
-const exportToExcel = () => {
-  if (filteredData.value.length === 0) return;
-  const worksheet = XLSX.utils.json_to_sheet(filteredData.value);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "StockData");
-  XLSX.writeFile(workbook, `FI_Data_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  if (allRawData.value.length === 0) fetchStocks();
 };
 
 const handleSizeChange = (val) => { pageSize.value = val; currentPage.value = 1; };
 const handleCurrentChange = (val) => { currentPage.value = val; };
 
+const fetchStocks = async () => {
+  loading.value = true;
+  try {
+    const response = await axios.get(API_URL);
+    allRawData.value = Array.isArray(response.data) ? response.data : (response.data.stocks || []);
+  } catch (error) {
+    console.error("Fetch Error:", error);
+  } finally {
+    loading.value = false;
+  }
+};
+
 const handleRowClick = (row) => {
   if (row) {
     selectedStock.value = row;
-    updateChart(row.ticker);
+    updateChart(row.ticker || row.Ticker || row.TICKER);
   }
 };
 
@@ -250,17 +266,29 @@ const updateChart = (ticker) => {
   if (chartInstance) chartInstance.destroy();
 
   const history = allRawData.value
-    .filter(s => s.ticker === ticker)
-    .sort((a, b) => a.date.localeCompare(b.date))
+    .filter(s => (s.ticker || s.Ticker || s.TICKER) === ticker)
+    .sort((a, b) => (a.date || a.Date || a.DATE).localeCompare(b.date || b.Date || b.DATE))
     .slice(-30);
 
   chartInstance = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: history.map(h => h.date),
+      labels: history.map(h => h.date || h.Date || h.DATE),
       datasets: [
-        { label: 'KRW Price', data: history.map(h => h.krw_price), borderColor: '#409eff', yAxisID: 'y-krw', tension: 0.3 },
-        { label: 'USD Price', data: history.map(h => h.usd_price), borderColor: '#67c23a', yAxisID: 'y-usd', tension: 0.3 }
+        {
+          label: 'KRW Price (원)',
+          data: history.map(h => h.krw_price || h.KRW_PRICE || 0),
+          borderColor: '#409eff',
+          yAxisID: 'y-krw',
+          tension: 0.3
+        },
+        {
+          label: 'USD Price ($)',
+          data: history.map(h => h.usd_price || h.USD_PRICE || h.price || 0),
+          borderColor: '#67c23a',
+          yAxisID: 'y-usd',
+          tension: 0.3
+        }
       ]
     },
     options: {
