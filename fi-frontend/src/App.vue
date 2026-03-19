@@ -45,8 +45,7 @@
               <div class="header-left">
                 <span class="title-text">전체 데이터 상세 영역</span>
                 <el-tag type="info" effect="plain" class="date-range-badge">
-                  <i class="el-icon-date"></i> 
-                  {{ finalStartDate || '전체' }} ~ {{ finalEndDate || '현재' }}
+                  📅 {{ finalStartDate || '시작' }} ~ {{ finalEndDate || '종료' }}
                 </el-tag>
               </div>
               <el-tag type="success">검색 결과: {{ filteredData.length }}건</el-tag>
@@ -63,3 +62,260 @@
             <el-table-column prop="ticker" label="Ticker" width="100" fixed sortable />
             <el-table-column prop="name" label="Name" width="130" show-overflow-tooltip />
             <el-table-column prop="date" label="Date" width="110" sortable />
+            
+            <el-table-column label="USD Price" width="120" align="right">
+              <template #default="scope">
+                <span class="currency-usd">{{ formatCurrency(scope.row.usd_price || scope.row.price, '$') }}</span>
+              </template>
+            </el-table-column>
+
+            <el-table-column label="KRW Price" width="130" align="right">
+              <template #default="scope">
+                <span class="currency-krw">{{ formatCurrency(scope.row.krw_price, '', '원') }}</span>
+              </template>
+            </el-table-column>
+
+            <el-table-column prop="per" label="PER" width="80" align="right" sortable />
+            <el-table-column prop="roe" label="ROE (%)" width="90" align="right" sortable />
+            <el-table-column prop="peg" label="PEG" width="80" align="right" sortable />
+            <el-table-column prop="dividend_yield" label="Div.Y" width="90" align="right" sortable />
+          </el-table>
+
+          <div class="pagination-container">
+            <el-pagination
+              v-model:current-page="currentPage"
+              v-model:page-size="pageSize"
+              :page-sizes="[20, 50, 100]"
+              layout="total, sizes, prev, pager, next, jumper"
+              :total="filteredData.length"
+              @size-change="handleSizeChange"
+              @current-change="handleCurrentChange"
+            />
+          </div>
+        </el-card>
+
+        <el-card class="section-card chart-container">
+          <template #header>
+            <div class="card-header">
+              <span class="title-text">가격 추이 분석 (KRW / USD 비교)</span>
+              <el-tag v-if="selectedStock" type="info">{{ selectedStock.ticker }} 분석 중</el-tag>
+            </div>
+          </template>
+          <div class="canvas-wrapper"><canvas id="mainPriceChart"></canvas></div>
+        </el-card>
+      </el-main>
+    </el-container>
+  </el-container>
+</template>
+
+<script setup>
+import { ref, computed, onMounted } from 'vue';
+import axios from 'axios';
+import Chart from 'chart.js/auto';
+import * as XLSX from 'xlsx';
+
+// --- 기본 상태 ---
+const allRawData = ref([]); 
+const loading = ref(false);
+const selectedStock = ref(null);
+let chartInstance = null;
+
+const currentPage = ref(1);
+const pageSize = ref(50);
+
+// 임시 값 (입력 중)
+const startDate = ref('');
+const endDate = ref('');
+const tempSearchQuery = ref('');
+const tempFilterBlueChip = ref(false);
+const tempFilterLowPer = ref(false);
+
+// 최종 적용 값 (화면 표시 및 필터링용)
+const finalStartDate = ref('');
+const finalEndDate = ref('');
+const finalSearchQuery = ref('');
+const finalFilterBlueChip = ref(false);
+const finalFilterLowPer = ref(false);
+
+const API_URL = 'https://sj-fi.onrender.com/stocks';
+
+// --- 포맷팅 함수 ---
+const formatCurrency = (val, prefix = '', suffix = '') => {
+  if (!val) return prefix + ' 0.00 ' + suffix;
+  const num = parseFloat(val);
+  const parts = num.toFixed(2).split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return `${prefix}${parts.join('.')}${suffix}`;
+};
+
+// --- 데이터 처리 ---
+const tickerList = computed(() => {
+  const tickers = allRawData.value.map(item => (item.ticker || item.Ticker || '').trim().toUpperCase());
+  return [...new Set(tickers)].filter(Boolean).sort();
+});
+
+const filteredData = computed(() => {
+  return allRawData.value.filter(item => {
+    const t = (item.ticker || item.Ticker || '').trim().toUpperCase();
+    const d = item.date || item.Date || '';
+    const roe = parseFloat(item.roe || item.ROE || 0);
+    const per = parseFloat(item.per || item.PER || 0);
+
+    if (finalStartDate.value && d < finalStartDate.value) return false;
+    if (finalEndDate.value && d > finalEndDate.value) return false;
+    if (finalSearchQuery.value && t !== finalSearchQuery.value) return false;
+    if (finalFilterBlueChip.value && roe < 15) return false;
+    if (finalFilterLowPer.value && (per <= 0 || per >= 15)) return false;
+
+    return true;
+  }).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+});
+
+const paginatedData = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value;
+  return filteredData.value.slice(start, start + pageSize.value);
+});
+
+// --- 메서드 ---
+const exportToExcel = () => {
+  if (filteredData.value.length === 0) return;
+  const exportData = filteredData.value.map((item, index) => ({
+    "No": index + 1,
+    "Ticker": item.ticker || item.Ticker,
+    "Name": item.name,
+    "Date": item.date,
+    "USD Price": item.usd_price || item.price,
+    "KRW Price": item.krw_price,
+    "PER": item.per,
+    "ROE (%)": item.roe,
+    "PEG": item.peg,
+    "Dividend Yield": item.dividend_yield
+  }));
+  const worksheet = XLSX.utils.json_to_sheet(exportData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "StockData");
+  XLSX.writeFile(workbook, `FI_Data_${new Date().toISOString().slice(0, 10)}.xlsx`);
+};
+
+const applyFilters = () => {
+  currentPage.value = 1;
+  finalStartDate.value = startDate.value;
+  finalEndDate.value = endDate.value;
+  finalSearchQuery.value = tempSearchQuery.value;
+  finalFilterBlueChip.value = tempFilterBlueChip.value;
+  finalFilterLowPer.value = tempFilterLowPer.value;
+  if (allRawData.value.length === 0) fetchStocks();
+};
+
+const handleSizeChange = (val) => { pageSize.value = val; currentPage.value = 1; };
+const handleCurrentChange = (val) => { currentPage.value = val; };
+
+const fetchStocks = async () => {
+  loading.value = true;
+  try {
+    const response = await axios.get(API_URL);
+    allRawData.value = Array.isArray(response.data) ? response.data : (response.data.stocks || []);
+  } catch (error) {
+    console.error("Fetch Error:", error);
+  } finally {
+    loading.value = false;
+  }
+};
+
+const handleRowClick = (row) => {
+  if (row) {
+    selectedStock.value = row;
+    updateChart(row.ticker || row.Ticker);
+  }
+};
+
+const updateChart = (ticker) => {
+  const ctx = document.getElementById('mainPriceChart')?.getContext('2d');
+  if (!ctx || !ticker) return;
+  if (chartInstance) chartInstance.destroy();
+
+  const history = filteredData.value
+    .filter(s => (s.ticker || s.Ticker) === ticker)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(-50);
+
+  chartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: history.map(h => h.date),
+      datasets: [
+        {
+          label: 'KRW Price (원)',
+          data: history.map(h => h.krw_price || 0),
+          borderColor: '#409eff',
+          backgroundColor: 'rgba(64, 158, 255, 0.1)',
+          yAxisID: 'y-krw',
+          fill: true,
+          tension: 0.3
+        },
+        {
+          label: 'USD Price ($)',
+          data: history.map(h => h.usd_price || h.price || 0),
+          borderColor: '#67c23a',
+          borderDash: [5, 5],
+          yAxisID: 'y-usd',
+          fill: false,
+          tension: 0.3
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}${ctx.datasetIndex === 0 ? ' 원' : ' $'}`
+          }
+        }
+      },
+      scales: {
+        'y-krw': {
+          type: 'linear', position: 'left',
+          title: { display: true, text: 'KRW (원)' },
+          ticks: { callback: (val) => val.toLocaleString() + ' ₩' }
+        },
+        'y-usd': {
+          type: 'linear', position: 'right',
+          title: { display: true, text: 'USD ($)' },
+          ticks: { callback: (val) => '$ ' + val.toFixed(2) },
+          grid: { drawOnChartArea: false }
+        }
+      }
+    }
+  });
+};
+
+onMounted(fetchStocks);
+</script>
+
+<style scoped>
+.dashboard-wrapper { height: 100vh; background-color: #f5f7fa; display: flex; overflow: hidden; }
+.sidebar { background: #fff; border-right: 1px solid #dcdfe6; padding: 20px; box-shadow: 2px 0 8px rgba(0,0,0,0.05); }
+.brand { color: #409eff; font-size: 1.4rem; margin-bottom: 25px; text-align: center; font-weight: bold; }
+.main-content { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.scroll-area { padding: 20px; overflow-y: auto; }
+.section-card { margin-bottom: 20px; border-radius: 8px; }
+
+/* 헤더 스타일 및 날짜 뱃지 */
+.card-header { display: flex; justify-content: space-between; align-items: center; }
+.header-left { display: flex; align-items: center; gap: 15px; }
+.date-range-badge { font-weight: bold; font-size: 0.85rem; padding: 0 12px; }
+
+.pagination-container { margin-top: 15px; display: flex; justify-content: center; }
+.chart-container { height: 400px; }
+.canvas-wrapper { height: 320px; }
+.w-100 { width: 100%; }
+
+.button-group { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+.sidebar-btn { width: 100% !important; margin-left: 0 !important; margin-right: 0 !important; display: block; }
+
+.currency-usd { color: #67c23a; font-weight: bold; }
+.currency-krw { color: #409eff; font-weight: bold; }
+</style>
