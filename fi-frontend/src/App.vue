@@ -7,14 +7,22 @@
       </div>
       
       <el-form class="filter-form" label-position="top">
-        <el-divider content-position="left">종목 필터</el-divider>
-        <el-form-item label="종목 검색">
-          <el-input 
-            v-model="searchQuery" 
-            placeholder="티커 입력 후 버튼 클릭" 
+        <el-divider content-position="left">종목 선택</el-divider>
+        <el-form-item label="종목 리스트 (Top 50)">
+          <el-select 
+            v-model="tempSearchQuery" 
+            placeholder="종목을 선택하세요" 
             clearable 
-            @keyup.enter="applyFilters"
-          />
+            filterable
+            class="w-100"
+          >
+            <el-option
+              v-for="item in stocks"
+              :key="item.ticker"
+              :label="item.ticker"
+              :value="item.ticker"
+            />
+          </el-select>
         </el-form-item>
 
         <el-divider content-position="left">가치투자 필터</el-divider>
@@ -82,22 +90,23 @@ const loading = ref(false);
 const selectedStock = ref(null);
 let chartInstance = null;
 
-// [변경점 1] 입력창과 직접 연결된 "임시" 상태값들
-const searchQuery = ref('');
+// 임시 필터 상태 (콤보박스 및 체크박스용)
+const tempSearchQuery = ref('');
 const tempFilterBlueChip = ref(false);
 const tempFilterLowPer = ref(false);
 
-// [변경점 2] 실제 필터링에 사용될 "확정된" 상태값들
+// 확정된 필터 상태 (버튼 클릭 시 적용됨)
 const finalSearchQuery = ref('');
 const finalFilterBlueChip = ref(false);
 const finalFilterLowPer = ref(false);
 
 const API_URL = 'https://sj-fi.onrender.com/stocks';
 
-// [변경점 3] filteredStocks는 이제 final... 값들만 바라봅니다.
+// 필터링 로직
 const filteredStocks = computed(() => {
   return stocks.value.filter(s => {
-    const nameMatch = s.ticker.toLowerCase().includes(finalSearchQuery.value.toLowerCase());
+    // 종목이 선택되지 않았을 때는 전체를 보여주고, 선택되었을 때만 해당 종목만 필터링합니다.
+    const nameMatch = finalSearchQuery.value ? s.ticker === finalSearchQuery.value : true;
     const roeMatch = finalFilterBlueChip.value ? s.roe > 15 : true;
     const perMatch = finalFilterLowPer.value ? (s.per > 0 && s.per < 15) : true;
     return nameMatch && roeMatch && perMatch;
@@ -115,14 +124,10 @@ const summaryStats = computed(() => {
   };
 });
 
-// [변경점 4] 버튼을 눌렀을 때 실행되는 함수
 const applyFilters = async () => {
-  // 1. 임시 값을 확정 값으로 복사 (이때 테이블이 업데이트됨)
-  finalSearchQuery.value = searchQuery.value;
+  finalSearchQuery.value = tempSearchQuery.value;
   finalFilterBlueChip.value = tempFilterBlueChip.value;
   finalFilterLowPer.value = tempFilterLowPer.value;
-
-  // 2. 백엔드에서 최신 데이터를 다시 가져옴
   await fetchStocks();
 };
 
@@ -132,8 +137,8 @@ const fetchStocks = async () => {
     const response = await axios.get(API_URL, { timeout: 60000 });
     stocks.value = response.data;
     if (stocks.value.length > 0) {
-      // 필터링된 결과 중 첫 번째 선택
       await nextTick();
+      // 필터링된 결과가 있으면 첫 번째 항목을 기본 선택
       if (filteredStocks.value.length > 0) {
         handleRowClick(filteredStocks.value[0]);
       }
@@ -175,7 +180,7 @@ onMounted(fetchStocks);
 </script>
 
 <style scoped>
-/* (기존 스타일과 동일) */
+/* 기존 스타일과 동일 */
 .dashboard-wrapper { height: 100vh; background-color: #f5f7fa; display: flex; }
 .sidebar { background: #fff; border-right: 1px solid #dcdfe6; padding: 20px; display: flex; flex-direction: column; }
 .brand { color: #409eff; font-size: 1.5rem; margin-bottom: 30px; text-align: center; }
