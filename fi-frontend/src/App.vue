@@ -51,9 +51,19 @@
             <el-table-column prop="ticker" label="Ticker" width="100" fixed sortable />
             <el-table-column prop="name" label="Name" width="130" show-overflow-tooltip />
             <el-table-column prop="date" label="Date" width="110" sortable />
-            <el-table-column label="USD Price" width="110" align="right">
-              <template #default="scope">{{ formatDecimal(scope.row.usd_price || scope.row.price) }}</template>
+            
+            <el-table-column label="USD Price" width="130" align="right">
+              <template #default="scope">
+                <span class="currency-usd">{{ formatCurrency(scope.row.usd_price || scope.row.price, '$') }}</span>
+              </template>
             </el-table-column>
+
+            <el-table-column label="KRW Price" width="140" align="right">
+              <template #default="scope">
+                <span class="currency-krw">{{ formatCurrency(scope.row.krw_price, '', '원') }}</span>
+              </template>
+            </el-table-column>
+
             <el-table-column prop="per" label="PER" width="80" align="right" sortable />
             <el-table-column prop="roe" label="ROE (%)" width="90" align="right" sortable />
             <el-table-column prop="peg" label="PEG" width="80" align="right" sortable />
@@ -82,7 +92,6 @@
 </template>
 
 <script setup>
-// ... (script 부분은 이전과 동일하되 하단 pagination 로직 유지) ...
 import { ref, computed, onMounted, nextTick } from 'vue';
 import axios from 'axios';
 import Chart from 'chart.js/auto';
@@ -109,9 +118,17 @@ const finalFilterLowPer = ref(false);
 
 const API_URL = 'https://sj-fi.onrender.com/stocks';
 
-const formatDecimal = (val) => {
+// 통화 포맷 함수 (콤마 + 소수점 4자리 + 단위)
+const formatCurrency = (val, prefix = '', suffix = '') => {
+  if (val === undefined || val === null || val === 0) return prefix + ' 0.0000 ' + suffix;
   const num = parseFloat(val);
-  return isNaN(num) ? '0.0000' : num.toFixed(4);
+  if (isNaN(num)) return prefix + ' 0.0000 ' + suffix;
+  
+  // 천 단위 콤마와 소수점 4자리 처리
+  const parts = num.toFixed(4).split('.');
+  parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  
+  return `${prefix}${parts.join('.')}${suffix}`;
 };
 
 const tickerList = computed(() => {
@@ -209,7 +226,6 @@ onMounted(fetchStocks);
 </script>
 
 <style scoped>
-/* 이전 스타일 유지 */
 .dashboard-wrapper { height: 100vh; background-color: #f5f7fa; display: flex; overflow: hidden; }
 .sidebar { background: #fff; border-right: 1px solid #dcdfe6; padding: 20px; }
 .brand { color: #409eff; font-size: 1.4rem; margin-bottom: 25px; text-align: center; font-weight: bold; }
@@ -221,4 +237,7 @@ onMounted(fetchStocks);
 .chart-container { height: 350px; }
 .canvas-wrapper { height: 280px; }
 .w-100 { width: 100%; }
+/* 통화 스타일 정의 */
+.currency-usd { color: #67c23a; font-weight: bold; }
+.currency-krw { color: #409eff; font-weight: bold; }
 </style>
