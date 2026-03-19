@@ -18,12 +18,6 @@
             <el-option v-for="item in tickerList" :key="item" :label="item" :value="item" />
           </el-select>
         </el-form-item>
-
-        <el-divider content-position="left">가치투자 필터</el-divider>
-        <el-form-item>
-          <el-checkbox v-model="tempFilterBlueChip">우량주 (ROE > 15%)</el-checkbox>
-          <el-checkbox v-model="tempFilterLowPer">저평가 (PER < 15)</el-checkbox>
-        </el-form-item>
         
         <div class="button-group">
           <el-button type="primary" class="sidebar-btn" @click="applyFilters" :disabled="loading">
@@ -45,37 +39,23 @@
               <div class="header-left">
                 <span class="title-text">전체 데이터 상세 영역</span>
                 <el-tag type="info" effect="plain" class="date-range-badge">
-                  📅 
-                  <template v-if="finalStartDate && finalEndDate">
-                    {{ finalStartDate }} ~ {{ finalEndDate }}
-                  </template>
-                  <template v-else>
-                    전체기간
-                  </template>
+                  📅 {{ (!finalStartDate && !finalEndDate) ? '전체기간' : (finalStartDate + ' ~ ' + finalEndDate) }}
                 </el-tag>
               </div>
               <el-tag type="success">검색 결과: {{ filteredData.length }}건</el-tag>
             </div>
           </template>
           
-          <el-table :data="paginatedData" stripe height="450" border style="width: 100%" highlight-current-row @current-change="handleRowClick">
+          <el-table :data="paginatedData" stripe height="500" border style="width: 100%" highlight-current-row @current-change="handleRowClick">
             <el-table-column label="No." width="60" align="center" fixed>
               <template #default="scope">
                 {{ (currentPage - 1) * pageSize + scope.$index + 1 }}
               </template>
             </el-table-column>
 
-            <el-table-column label="Ticker" width="90" fixed sortable>
-              <template #default="scope">{{ scope.row.ticker || scope.row.Ticker || scope.row.TICKER }}</template>
-            </el-table-column>
-            
-            <el-table-column label="Name" width="120" show-overflow-tooltip>
-              <template #default="scope">{{ scope.row.name || scope.row.Name || scope.row.NAME }}</template>
-            </el-table-column>
-
-            <el-table-column label="Date" width="110" sortable>
-              <template #default="scope">{{ scope.row.date || scope.row.Date || scope.row.DATE }}</template>
-            </el-table-column>
+            <el-table-column prop="ticker" label="Ticker" width="90" fixed sortable />
+            <el-table-column prop="name" label="Name" width="100" show-overflow-tooltip />
+            <el-table-column prop="date" label="Date" width="110" sortable />
             
             <el-table-column label="USD Price" width="110" align="right">
               <template #default="scope">
@@ -89,29 +69,29 @@
               </template>
             </el-table-column>
 
-            <el-table-column label="PER" width="80" align="right" sortable>
-              <template #default="scope">{{ scope.row.per || scope.row.Per || scope.row.PER }}</template>              
+            <el-table-column label="PER" width="85" align="right" sortable>
+              <template #default="scope">{{ formatMetric(scope.row.per || scope.row.PER) }}</template>
             </el-table-column>
-            <el-table-column label="PBR" width="80" align="right" sortable>
-              <template #default="scope">{{ scope.row.pbr || scope.row.PBR || '-' }}</template>
+            <el-table-column label="PBR" width="85" align="right" sortable>
+              <template #default="scope">{{ formatMetric(scope.row.pbr || scope.row.PBR) }}</template>
             </el-table-column>
-            <el-table-column label="PSR" width="80" align="right" sortable>
-              <template #default="scope">{{ scope.row.psr || scope.row.PSR || '-' }}</template>
+            <el-table-column label="PSR" width="85" align="right" sortable>
+              <template #default="scope">{{ formatMetric(scope.row.psr || scope.row.PSR) }}</template>
             </el-table-column>
-            <el-table-column label="PCR" width="80" align="right" sortable>
-              <template #default="scope">{{ scope.row.pcr || scope.row.PCR || '-' }}</template>
+            <el-table-column label="PCR" width="85" align="right" sortable>
+              <template #default="scope">{{ formatMetric(scope.row.pcr || scope.row.PCR) }}</template>
             </el-table-column>
             <el-table-column label="ROE(%)" width="90" align="right" sortable>
-              <template #default="scope">{{ scope.row.roe || scope.row.ROE || '-' }}</template>
+              <template #default="scope">{{ formatMetric(scope.row.roe || scope.row.ROE) }}</template>
             </el-table-column>
-            <el-table-column label="EPS" width="100" align="right" sortable>
-              <template #default="scope">{{ scope.row.eps || scope.row.EPS || '-' }}</template>
+            <el-table-column label="EPS" width="90" align="right" sortable>
+              <template #default="scope">{{ formatMetric(scope.row.eps || scope.row.EPS) }}</template>
             </el-table-column>
             <el-table-column label="PEG" width="80" align="right" sortable>
-              <template #default="scope">{{ scope.row.peg || scope.row.PEG || '-' }}</template>
+              <template #default="scope">{{ formatMetric(scope.row.peg || scope.row.PEG) }}</template>
             </el-table-column>
             <el-table-column label="Div.Y(%)" width="100" align="right" sortable>
-              <template #default="scope">{{ scope.row.dividend_yield || scope.row.DIVIDEND_YIELD || '-' }}</template>
+              <template #default="scope">{{ formatMetric(scope.row.dividend_yield || scope.row.DIVIDEND_YIELD) }}</template>
             </el-table-column>
           </el-table>
 
@@ -119,10 +99,8 @@
             <el-pagination
               v-model:current-page="currentPage"
               v-model:page-size="pageSize"
-              :page-sizes="[20, 50, 100]"
-              layout="total, sizes, prev, pager, next, jumper"
+              layout="total, prev, pager, next"
               :total="filteredData.length"
-              @size-change="handleSizeChange"
               @current-change="handleCurrentChange"
             />
           </div>
@@ -131,8 +109,8 @@
         <el-card class="section-card chart-container">
           <template #header>
             <div class="card-header">
-              <span class="title-text">가격 추이 분석 (KRW / USD 비교)</span>
-              <el-tag v-if="selectedStock" type="info">{{ selectedStock.ticker || selectedStock.Ticker }} 분석 중</el-tag>
+              <span class="title-text">가격 추이 분석</span>
+              <el-tag v-if="selectedStock" type="info">{{ selectedStock.ticker }} 분석 중</el-tag>
             </div>
           </template>
           <div class="canvas-wrapper"><canvas id="mainPriceChart"></canvas></div>
@@ -148,6 +126,7 @@ import axios from 'axios';
 import Chart from 'chart.js/auto';
 import * as XLSX from 'xlsx';
 
+// --- 상태 관리 ---
 const allRawData = ref([]); 
 const loading = ref(false);
 const selectedStock = ref(null);
@@ -159,44 +138,43 @@ const pageSize = ref(50);
 const startDate = ref('');
 const endDate = ref('');
 const tempSearchQuery = ref('');
-const tempFilterBlueChip = ref(false);
-const tempFilterLowPer = ref(false);
 
 const finalStartDate = ref('');
 const finalEndDate = ref('');
 const finalSearchQuery = ref('');
-const finalFilterBlueChip = ref(false);
-const finalFilterLowPer = ref(false);
 
 const API_URL = 'https://sj-fi.onrender.com/stocks';
 
+// --- 포맷팅 함수 ---
 const formatCurrency = (val, prefix = '', suffix = '') => {
-  if (val === undefined || val === null || val === '') return prefix + ' - ' + suffix;
+  if (val === undefined || val === null || val === '') return '-';
   const num = parseFloat(val);
-  if (isNaN(num)) return prefix + ' - ' + suffix;
-  return `${prefix}${num.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}${suffix}`;
+  return isNaN(num) ? '-' : `${prefix}${num.toLocaleString(undefined, {minimumFractionDigits: 0, maximumFractionDigits: 0})}${suffix}`;
 };
 
+const formatMetric = (val) => {
+  if (val === undefined || val === null || val === '') return '-';
+  const num = parseFloat(val);
+  return isNaN(num) ? '-' : num.toFixed(2);
+};
+
+// --- 데이터 필터링 로직 ---
 const tickerList = computed(() => {
-  const tickers = allRawData.value.map(item => (item.ticker || item.Ticker || item.TICKER || '').trim().toUpperCase());
+  const tickers = allRawData.value.map(item => (item.ticker || '').trim().toUpperCase());
   return [...new Set(tickers)].filter(Boolean).sort();
 });
 
 const filteredData = computed(() => {
   return allRawData.value.filter(item => {
-    const t = (item.ticker || item.Ticker || item.TICKER || '').trim().toUpperCase();
-    const d = item.date || item.Date || item.DATE || '';
-    const roeVal = parseFloat(item.roe || item.ROE || 0);
-    const perVal = parseFloat(item.per || item.PER || 0);
-
+    const t = (item.ticker || '').trim().toUpperCase();
+    const d = item.date || '';
+    
     if (finalStartDate.value && d < finalStartDate.value) return false;
     if (finalEndDate.value && d > finalEndDate.value) return false;
     if (finalSearchQuery.value && t !== finalSearchQuery.value) return false;
-    if (finalFilterBlueChip.value && roeVal < 15) return false;
-    if (finalFilterLowPer.value && (perVal <= 0 || perVal >= 15)) return false;
 
     return true;
-  }).sort((a, b) => (b.date || b.Date || '').localeCompare(a.date || a.Date || ''));
+  }).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 });
 
 const paginatedData = computed(() => {
@@ -204,28 +182,22 @@ const paginatedData = computed(() => {
   return filteredData.value.slice(start, start + pageSize.value);
 });
 
-const exportToExcel = () => {
-  if (filteredData.value.length === 0) return;
-  const exportData = filteredData.value.map((item, index) => ({
-    "No": index + 1,
-    "Ticker": item.ticker || item.Ticker || item.TICKER,
-    "Name": item.name || item.Name || item.NAME,
-    "Date": item.date || item.Date || item.DATE,
-    "Price(USD)": item.usd_price || item.USD_PRICE || item.price,
-    "Price(KRW)": item.krw_price || item.KRW_PRICE,
-    "PER": item.per || item.PER,
-    "PBR": item.pbr || item.PBR,
-    "PSR": item.psr || item.PSR,
-    "PCR": item.pcr || item.PCR,
-    "ROE(%)": item.roe || item.ROE,
-    "EPS": item.eps || item.EPS,
-    "PEG": item.peg || item.PEG,
-    "Div.Yield(%)": item.dividend_yield || item.DIVIDEND_YIELD
-  }));
-  const worksheet = XLSX.utils.json_to_sheet(exportData);
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "StockData");
-  XLSX.writeFile(workbook, `FI_Data_${new Date().toISOString().slice(0, 10)}.xlsx`);
+// --- 메서드 ---
+const fetchStocks = async () => {
+  loading.value = true;
+  try {
+    const response = await axios.get(API_URL);
+    // [가장 중요] response.data.history 를 담아야 데이터가 보입니다.
+    if (response.data && response.data.history) {
+      allRawData.value = response.data.history;
+    } else if (Array.isArray(response.data)) {
+      allRawData.value = response.data;
+    }
+  } catch (error) {
+    console.error("데이터 로드 오류:", error);
+  } finally {
+    loading.value = false;
+  }
 };
 
 const applyFilters = () => {
@@ -233,30 +205,23 @@ const applyFilters = () => {
   finalStartDate.value = startDate.value;
   finalEndDate.value = endDate.value;
   finalSearchQuery.value = tempSearchQuery.value;
-  finalFilterBlueChip.value = tempFilterBlueChip.value;
-  finalFilterLowPer.value = tempFilterLowPer.value;
   if (allRawData.value.length === 0) fetchStocks();
 };
 
-const handleSizeChange = (val) => { pageSize.value = val; currentPage.value = 1; };
-const handleCurrentChange = (val) => { currentPage.value = val; };
-
-const fetchStocks = async () => {
-  loading.value = true;
-  try {
-    const response = await axios.get(API_URL);
-    allRawData.value = Array.isArray(response.data) ? response.data : (response.data.stocks || []);
-  } catch (error) {
-    console.error("Fetch Error:", error);
-  } finally {
-    loading.value = false;
-  }
+const exportToExcel = () => {
+  if (filteredData.value.length === 0) return;
+  const worksheet = XLSX.utils.json_to_sheet(filteredData.value);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "FI_Data");
+  XLSX.writeFile(workbook, `FI_Stock_Analysis.xlsx`);
 };
+
+const handleCurrentChange = (val) => { currentPage.value = val; };
 
 const handleRowClick = (row) => {
   if (row) {
     selectedStock.value = row;
-    updateChart(row.ticker || row.Ticker || row.TICKER);
+    updateChart(row.ticker);
   }
 };
 
@@ -266,29 +231,17 @@ const updateChart = (ticker) => {
   if (chartInstance) chartInstance.destroy();
 
   const history = allRawData.value
-    .filter(s => (s.ticker || s.Ticker || s.TICKER) === ticker)
-    .sort((a, b) => (a.date || a.Date || a.DATE).localeCompare(b.date || b.Date || b.DATE))
+    .filter(s => s.ticker === ticker)
+    .sort((a, b) => a.date.localeCompare(b.date))
     .slice(-30);
 
   chartInstance = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: history.map(h => h.date || h.Date || h.DATE),
+      labels: history.map(h => h.date),
       datasets: [
-        {
-          label: 'KRW Price (원)',
-          data: history.map(h => h.krw_price || h.KRW_PRICE || 0),
-          borderColor: '#409eff',
-          yAxisID: 'y-krw',
-          tension: 0.3
-        },
-        {
-          label: 'USD Price ($)',
-          data: history.map(h => h.usd_price || h.USD_PRICE || h.price || 0),
-          borderColor: '#67c23a',
-          yAxisID: 'y-usd',
-          tension: 0.3
-        }
+        { label: 'KRW Price', data: history.map(h => h.krw_price), borderColor: '#409eff', yAxisID: 'y-krw', tension: 0.3 },
+        { label: 'USD Price', data: history.map(h => h.usd_price), borderColor: '#67c23a', yAxisID: 'y-usd', tension: 0.3 }
       ]
     },
     options: {
@@ -320,7 +273,7 @@ onMounted(fetchStocks);
 .canvas-wrapper { height: 280px; }
 .w-100 { width: 100%; }
 .button-group { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
-.sidebar-btn { width: 100% !important; margin-left: 0 !important; margin-right: 0 !important; display: block; }
+.sidebar-btn { width: 100% !important; margin-left: 0 !important; }
 .currency-usd { color: #67c23a; font-weight: bold; }
 .currency-krw { color: #409eff; font-weight: bold; }
 </style>
