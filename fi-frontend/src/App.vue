@@ -1,30 +1,16 @@
 <template>
-  <el-container class="dashboard-wrapper" v-loading="loading" element-loading-text="데이터를 불러오는 중입니다...">
+  <el-container class="dashboard-wrapper" v-loading="loading" element-loading-text="데이터를 정제 중입니다... 잠시만 기다려주세요.">
     <el-aside width="280px" class="sidebar">
       <div class="sidebar-header"><h2 class="brand">FI Analysis</h2></div>
       
-      <el-form class="filter-form" label-position="top">
+      <el-form class="filter-form" label-position="top" @submit.prevent>
         <el-divider content-position="left">조회 기간</el-divider>
-      <el-form-item label="시작일자">
-        <el-date-picker
-          v-model="startDate"
-          type="date"
-          placeholder="날짜 선택"
-          format="YYYY년 MM월 DD일" 
-          value-format="YYYY-MM-DD"
-          class="w-100"
-        />
-      </el-form-item>
-      <el-form-item label="종료일자">
-        <el-date-picker
-          v-model="endDate"
-          type="date"
-          placeholder="날짜 선택"
-          format="YYYY년 MM월 DD일"
-          value-format="YYYY-MM-DD"
-          class="w-100"
-        />
-      </el-form-item>
+        <el-form-item label="시작일자">
+          <el-date-picker v-model="startDate" type="date" placeholder="시작일" format="YYYY-MM-DD" value-format="YYYY-MM-DD" class="w-100" />
+        </el-form-item>
+        <el-form-item label="종료일자">
+          <el-date-picker v-model="endDate" type="date" placeholder="종료일" format="YYYY-MM-DD" value-format="YYYY-MM-DD" class="w-100" />
+        </el-form-item>
 
         <el-divider content-position="left">종목 선택</el-divider>
         <el-form-item label="특정 종목 필터">
@@ -39,7 +25,9 @@
           <el-checkbox v-model="tempFilterLowPer">저평가 (PER < 15)</el-checkbox>
         </el-form-item>
         
-        <el-button type="primary" class="w-100" @click="applyFilters">데이터 적용 및 새로고침</el-button>
+        <el-button type="primary" class="w-100" @click="applyFilters" :disabled="loading">
+          {{ loading ? '처리 중...' : '데이터 적용 및 새로고침' }}
+        </el-button>
       </el-form>
     </el-aside>
 
@@ -48,35 +36,38 @@
         <el-card class="section-card">
           <template #header>
             <div class="card-header">
-              <span class="title-text">전체 데이터 영역 (기간별 상세)</span>
+              <span class="title-text">전체 데이터 영역</span>
               <div>
-                <el-tag type="info" effect="plain" class="mx-1">조회 범위: {{ finalStartDate || '전체' }} ~ {{ finalEndDate || '현재' }}</el-tag>
-                <el-tag type="success">총 {{ filteredStocks.length }}건</el-tag>
+                <el-tag v-if="finalStartDate || finalEndDate" type="warning" class="mx-1">
+                  {{ finalStartDate || '시작' }} ~ {{ finalEndDate || '종료' }}
+                </el-tag>
+                <el-tag type="success">검색 결과: {{ filteredStocks.length }}건</el-tag>
               </div>
             </div>
           </template>
           
-          <el-table :data="filteredStocks" stripe height="550" highlight-current-row @current-change="handleRowClick" border style="width: 100%">
-            <el-table-column prop="ticker" label="Ticker" width="90" fixed sortable />
-            <el-table-column prop="name" label="Name" width="120" show-overflow-tooltip />
+          <el-table 
+            :data="filteredStocks" 
+            stripe 
+            height="500" 
+            border 
+            style="width: 100%"
+            @current-change="handleRowClick"
+            :empty-text="loading ? '데이터를 불러오는 중...' : '조건에 맞는 데이터가 없습니다.'"
+          >
+            <el-table-column prop="ticker" label="Ticker" width="100" fixed sortable />
+            <el-table-column prop="name" label="Name" width="130" show-overflow-tooltip />
             <el-table-column prop="date" label="Date" width="110" sortable />
-            <el-table-column prop="usd_price" label="USD Price" width="110" align="right">
-              <template #default="scope">{{ formatDecimal(scope.row.usd_price) }}</template>
+            <el-table-column label="USD Price" width="110" align="right">
+              <template #default="scope">{{ formatDecimal(scope.row.usd_price || scope.row.price) }}</template>
             </el-table-column>
-            <el-table-column prop="krw_price" label="KRW Price" width="120" align="right">
+            <el-table-column label="KRW Price" width="120" align="right">
               <template #default="scope">{{ formatDecimal(scope.row.krw_price) }}</template>
             </el-table-column>
-            <el-table-column prop="close" label="Close" width="100" align="right">
-              <template #default="scope">{{ formatDecimal(scope.row.close) }}</template>
-            </el-table-column>
             <el-table-column prop="per" label="PER" width="80" align="right" sortable />
-            <el-table-column prop="pbr" label="PBR" width="80" align="right" sortable />
-            <el-table-column prop="psr" label="PSR" width="80" align="right" sortable />
-            <el-table-column prop="pcr" label="PCR" width="80" align="right" sortable />
             <el-table-column prop="roe" label="ROE (%)" width="90" align="right" sortable />
-            <el-table-column prop="eps" label="EPS" width="90" align="right" sortable />
             <el-table-column prop="peg" label="PEG" width="80" align="right" sortable />
-            <el-table-column prop="dividend_yield" label="Div. Yield" width="110" align="right" sortable />
+            <el-table-column prop="dividend_yield" label="Div.Y" width="90" align="right" sortable />
           </el-table>
         </el-card>
 
@@ -98,7 +89,6 @@ const loading = ref(false);
 const selectedStock = ref(null);
 let chartInstance = null;
 
-// 필터 상태값들
 const startDate = ref('');
 const endDate = ref('');
 const tempSearchQuery = ref('');
@@ -114,80 +104,64 @@ const finalFilterLowPer = ref(false);
 const API_URL = 'https://sj-fi.onrender.com/stocks';
 
 const formatDecimal = (val) => {
+  if (val === undefined || val === null || val === 0) return '0.0000';
   const num = parseFloat(val);
   return isNaN(num) ? '0.0000' : num.toFixed(4);
 };
 
-const v = (obj, keys) => {
-  for (const key of keys) {
-    const val = obj[key] ?? obj[key.toUpperCase()] ?? obj[key.toLowerCase()];
-    if (val !== undefined && val !== null) return val;
-  }
-  return 0;
-};
-
-// 콤보박스용 유니크 티커 리스트
+// 콤보박스용 유니크 티커 목록 (성능 최적화: Set 사용)
 const tickerList = computed(() => {
-  const set = new Set();
-  allRawData.value.forEach(item => {
-    const t = v(item, ['ticker', 'symbol', 'code']);
-    if (t) set.add(String(t).trim().toUpperCase());
-  });
-  return Array.from(set).sort();
+  const tickers = allRawData.value.map(item => (item.ticker || item.Ticker || item.symbol || '').trim().toUpperCase());
+  return [...new Set(tickers)].filter(Boolean).sort();
 });
 
-// 기간 및 조건 필터링 로직 (중복 제거 없이 전체 이력 출력)
+// 필터링 로직 최적화 (불필요한 루프 제거)
 const filteredStocks = computed(() => {
-  let data = allRawData.value.map(item => ({
-    ticker: String(v(item, ['ticker', 'symbol'])).trim().toUpperCase(),
-    name: v(item, ['name', 'company_name']) || 'N/A',
-    date: v(item, ['date', 'update_date']) || '-',
-    usd_price: v(item, ['usd_price']),
-    krw_price: v(item, ['krw_price']),
-    close: v(item, ['close']),
-    per: v(item, ['per']),
-    pbr: v(item, ['pbr']),
-    psr: v(item, ['psr']),
-    pcr: v(item, ['pcr']),
-    roe: v(item, ['roe']),
-    eps: v(item, ['eps']),
-    peg: v(item, ['peg']),
-    dividend_yield: v(item, ['dividend_yield'])
-  }));
+  if (allRawData.value.length === 0) return [];
 
-  return data.filter(s => {
+  return allRawData.value.filter(item => {
+    const t = (item.ticker || item.Ticker || '').trim().toUpperCase();
+    const d = item.date || item.Date || '';
+    const roe = parseFloat(item.roe || item.ROE || 0);
+    const per = parseFloat(item.per || item.PER || 0);
+
     // 1. 기간 필터
-    const itemDate = s.date;
-    const dateMatch = (!finalStartDate.value || itemDate >= finalStartDate.value) &&
-                      (!finalEndDate.value || itemDate <= finalEndDate.value);
+    if (finalStartDate.value && d < finalStartDate.value) return false;
+    if (finalEndDate.value && d > finalEndDate.value) return false;
     
     // 2. 종목 필터
-    const tickerMatch = finalSearchQuery.value ? s.ticker === finalSearchQuery.value : true;
+    if (finalSearchQuery.value && t !== finalSearchQuery.value) return false;
     
     // 3. 지표 필터
-    const roeMatch = finalFilterBlueChip.value ? parseFloat(s.roe) >= 15 : true;
-    const perMatch = finalFilterLowPer.value ? (parseFloat(s.per) > 0 && parseFloat(s.per) <= 15) : true;
+    if (finalFilterBlueChip.value && roe < 15) return false;
+    if (finalFilterLowPer.value && (per <= 0 || per >= 15)) return false;
 
-    return dateMatch && tickerMatch && roeMatch && perMatch;
-  }).sort((a, b) => b.date.localeCompare(a.date)); // 최신 날짜순 정렬
+    return true;
+  }).sort((a, b) => (b.date || '').localeCompare(a.date || '')); 
 });
 
-const applyFilters = () => {
+const applyFilters = async () => {
   finalStartDate.value = startDate.value;
   finalEndDate.value = endDate.value;
   finalSearchQuery.value = tempSearchQuery.value;
   finalFilterBlueChip.value = tempFilterBlueChip.value;
   finalFilterLowPer.value = tempFilterLowPer.value;
-  fetchStocks();
+  
+  // 데이터가 이미 로드되어 있다면 굳이 API를 다시 쏘지 않고 필터만 적용합니다.
+  if (allRawData.value.length === 0) {
+    await fetchStocks();
+  }
 };
 
 const fetchStocks = async () => {
   loading.value = true;
   try {
-    const response = await axios.get(API_URL);
+    const response = await axios.get(API_URL, { timeout: 30000 }); // 30초 타임아웃
     allRawData.value = Array.isArray(response.data) ? response.data : (response.data.stocks || []);
+    console.log("로드된 데이터 수:", allRawData.value.length);
   } catch (error) {
-    console.error("Fetch error:", error);
+    console.error("데이터 로드 중 에러 발생:", error);
+    alert("데이터를 가져오는 데 실패했습니다. 서버 상태를 확인하세요.");
   } finally {
     loading.value = false;
   }
@@ -196,7 +170,7 @@ const fetchStocks = async () => {
 const handleRowClick = (row) => {
   if (row) {
     selectedStock.value = row;
-    updateChart(row.ticker);
+    updateChart(row.ticker || row.Ticker);
   }
 };
 
@@ -205,22 +179,22 @@ const updateChart = (ticker) => {
   if (!ctx || !ticker) return;
   if (chartInstance) chartInstance.destroy();
 
-  // 차트 데이터도 해당 기간/종목의 데이터를 추출하여 표시
+  // 차트용 데이터 추출 (최대 30개로 제한하여 성능 확보)
   const history = filteredStocks.value
-    .filter(s => s.ticker === ticker)
-    .sort((a, b) => a.date.localeCompare(b.date));
+    .filter(s => (s.ticker || s.Ticker) === ticker)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(-30); 
 
   chartInstance = new Chart(ctx, {
     type: 'line',
     data: {
       labels: history.map(h => h.date),
       datasets: [{
-        label: `${ticker} Price History`,
-        data: history.map(h => h.usd_price),
+        label: `${ticker} Price Trend`,
+        data: history.map(h => h.usd_price || h.price || h.PRICE),
         borderColor: '#409eff',
-        backgroundColor: 'rgba(64, 158, 255, 0.1)',
-        fill: true,
-        tension: 0.3
+        tension: 0.3,
+        fill: false
       }]
     },
     options: { responsive: true, maintainAspectRatio: false }
@@ -231,16 +205,16 @@ onMounted(fetchStocks);
 </script>
 
 <style scoped>
+/* 이전 스타일 유지 */
 .dashboard-wrapper { height: 100vh; background-color: #f5f7fa; display: flex; overflow: hidden; }
-.sidebar { background: #fff; border-right: 1px solid #dcdfe6; padding: 20px; box-shadow: 2px 0 8px rgba(0,0,0,0.05); }
+.sidebar { background: #fff; border-right: 1px solid #dcdfe6; padding: 20px; }
 .brand { color: #409eff; font-size: 1.4rem; margin-bottom: 25px; text-align: center; font-weight: bold; }
 .main-content { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .scroll-area { padding: 20px; overflow-y: auto; }
 .section-card { margin-bottom: 20px; border-radius: 8px; }
-.title-text { font-weight: bold; font-size: 16px; color: #303133; }
 .card-header { display: flex; justify-content: space-between; align-items: center; }
 .chart-container { height: 350px; }
 .canvas-wrapper { height: 280px; }
 .w-100 { width: 100%; }
-.mx-1 { margin-left: 4px; margin-right: 4px; }
+.mx-1 { margin-left: 4px; }
 </style>
