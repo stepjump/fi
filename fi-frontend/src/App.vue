@@ -25,13 +25,15 @@
           <el-checkbox v-model="tempFilterLowPer">저평가 (PER < 15)</el-checkbox>
         </el-form-item>
         
-        <el-button type="primary" class="w-100" @click="applyFilters" :disabled="loading">
-          데이터 적용 및 새로고침
-        </el-button>
-        
-        <el-button type="success" class="w-100 mt-2" @click="exportToExcel" :disabled="loading || filteredData.length === 0">
-          엑셀 데이터 내보내기
-        </el-button>
+        <div class="button-group">
+          <el-button type="primary" class="sidebar-btn" @click="applyFilters" :disabled="loading">
+            데이터 적용 및 새로고침
+          </el-button>
+          
+          <el-button type="success" class="sidebar-btn" @click="exportToExcel" :disabled="loading || filteredData.length === 0">
+            엑셀 데이터 내보내기
+          </el-button>
+        </div>
       </el-form>
     </el-aside>
 
@@ -105,7 +107,7 @@
 import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
 import Chart from 'chart.js/auto';
-import * as XLSX from 'xlsx'; // [추가] 엑셀 라이브러리 임포트
+import * as XLSX from 'xlsx';
 
 // --- 기본 상태 ---
 const allRawData = ref([]); 
@@ -130,7 +132,7 @@ const finalFilterLowPer = ref(false);
 
 const API_URL = 'https://sj-fi.onrender.com/stocks';
 
-// --- 포맷팅 함수 ---
+// --- 유틸 함수 ---
 const formatCurrency = (val, prefix = '', suffix = '') => {
   if (!val) return prefix + ' 0.00 ' + suffix;
   const num = parseFloat(val);
@@ -139,7 +141,7 @@ const formatCurrency = (val, prefix = '', suffix = '') => {
   return `${prefix}${parts.join('.')}${suffix}`;
 };
 
-// --- 데이터 처리 ---
+// --- 데이터 로직 ---
 const tickerList = computed(() => {
   const tickers = allRawData.value.map(item => (item.ticker || item.Ticker || '').trim().toUpperCase());
   return [...new Set(tickers)].filter(Boolean).sort();
@@ -168,12 +170,8 @@ const paginatedData = computed(() => {
 });
 
 // --- 메서드 ---
-
-// [추가] 엑셀 내보내기 기능
 const exportToExcel = () => {
   if (filteredData.value.length === 0) return;
-
-  // 1. 저장할 데이터 정제
   const exportData = filteredData.value.map((item, index) => ({
     "No": index + 1,
     "Ticker": item.ticker || item.Ticker,
@@ -186,15 +184,10 @@ const exportToExcel = () => {
     "PEG": item.peg,
     "Dividend Yield": item.dividend_yield
   }));
-
-  // 2. 워크시트 생성
   const worksheet = XLSX.utils.json_to_sheet(exportData);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "StockData");
-
-  // 3. 파일 저장 (파일명에 오늘 날짜 포함)
-  const fileName = `FI_Stock_Export_${new Date().toISOString().slice(0, 10)}.xlsx`;
-  XLSX.writeFile(workbook, fileName);
+  XLSX.writeFile(workbook, `FI_Data_${new Date().toISOString().slice(0, 10)}.xlsx`);
 };
 
 const applyFilters = () => {
@@ -307,7 +300,21 @@ onMounted(fetchStocks);
 .chart-container { height: 400px; }
 .canvas-wrapper { height: 320px; }
 .w-100 { width: 100%; }
-.mt-2 { margin-top: 10px; }
+
+/* [수정] 버튼 정렬 스타일 */
+.button-group {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sidebar-btn {
+  width: 100% !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  display: block;
+}
+
 .currency-usd { color: #67c23a; font-weight: bold; }
 .currency-krw { color: #409eff; font-weight: bold; }
 </style>
