@@ -45,7 +45,13 @@
               <div class="header-left">
                 <span class="title-text">전체 데이터 상세 영역</span>
                 <el-tag type="info" effect="plain" class="date-range-badge">
-                  📅 {{ finalStartDate || '시작' }} ~ {{ finalEndDate || '종료' }}
+                  📅 
+                  <template v-if="finalStartDate && finalEndDate">
+                    {{ finalStartDate }} ~ {{ finalEndDate }}
+                  </template>
+                  <template v-else>
+                    전체기간
+                  </template>
                 </el-tag>
               </div>
               <el-tag type="success">검색 결과: {{ filteredData.length }}건</el-tag>
@@ -114,7 +120,7 @@ import axios from 'axios';
 import Chart from 'chart.js/auto';
 import * as XLSX from 'xlsx';
 
-// --- 기본 상태 ---
+// --- 상태 관리 ---
 const allRawData = ref([]); 
 const loading = ref(false);
 const selectedStock = ref(null);
@@ -123,14 +129,12 @@ let chartInstance = null;
 const currentPage = ref(1);
 const pageSize = ref(50);
 
-// 임시 값 (입력 중)
 const startDate = ref('');
 const endDate = ref('');
 const tempSearchQuery = ref('');
 const tempFilterBlueChip = ref(false);
 const tempFilterLowPer = ref(false);
 
-// 최종 적용 값 (화면 표시 및 필터링용)
 const finalStartDate = ref('');
 const finalEndDate = ref('');
 const finalSearchQuery = ref('');
@@ -139,7 +143,7 @@ const finalFilterLowPer = ref(false);
 
 const API_URL = 'https://sj-fi.onrender.com/stocks';
 
-// --- 포맷팅 함수 ---
+// --- 포맷팅 ---
 const formatCurrency = (val, prefix = '', suffix = '') => {
   if (!val) return prefix + ' 0.00 ' + suffix;
   const num = parseFloat(val);
@@ -148,7 +152,7 @@ const formatCurrency = (val, prefix = '', suffix = '') => {
   return `${prefix}${parts.join('.')}${suffix}`;
 };
 
-// --- 데이터 처리 ---
+// --- 데이터 필터링 로직 ---
 const tickerList = computed(() => {
   const tickers = allRawData.value.map(item => (item.ticker || item.Ticker || '').trim().toUpperCase());
   return [...new Set(tickers)].filter(Boolean).sort();
@@ -194,7 +198,7 @@ const exportToExcel = () => {
   const worksheet = XLSX.utils.json_to_sheet(exportData);
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "StockData");
-  XLSX.writeFile(workbook, `FI_Data_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  XLSX.writeFile(workbook, `FI_Export_${new Date().toISOString().slice(0, 10)}.xlsx`);
 };
 
 const applyFilters = () => {
@@ -303,7 +307,6 @@ onMounted(fetchStocks);
 .scroll-area { padding: 20px; overflow-y: auto; }
 .section-card { margin-bottom: 20px; border-radius: 8px; }
 
-/* 헤더 스타일 및 날짜 뱃지 */
 .card-header { display: flex; justify-content: space-between; align-items: center; }
 .header-left { display: flex; align-items: center; gap: 15px; }
 .date-range-badge { font-weight: bold; font-size: 0.85rem; padding: 0 12px; }
