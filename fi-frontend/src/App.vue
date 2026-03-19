@@ -1,9 +1,7 @@
 <template>
-  <el-container class="dashboard-wrapper" v-loading="loading" element-loading-text="데이터를 동기화 중입니다...">
-    
+  <el-container class="dashboard-wrapper" v-loading="loading" element-loading-text="데이터를 분석 중입니다...">
     <el-aside width="260px" class="sidebar">
       <div class="sidebar-header"><h2 class="brand">FI Analysis</h2></div>
-      
       <el-form class="filter-form" label-position="top">
         <el-divider content-position="left">종목 선택</el-divider>
         <el-form-item label="종목 리스트">
@@ -11,13 +9,11 @@
             <el-option v-for="item in uniqueStocks" :key="item.ticker" :label="item.ticker" :value="item.ticker" />
           </el-select>
         </el-form-item>
-
         <el-divider content-position="left">가치투자 필터</el-divider>
         <el-form-item>
           <el-checkbox v-model="tempFilterBlueChip">우량주 (ROE > 15%)</el-checkbox>
           <el-checkbox v-model="tempFilterLowPer">저평가 (PER < 15)</el-checkbox>
         </el-form-item>
-        
         <el-button type="primary" class="w-100" @click="applyFilters">데이터 적용 및 새로고침</el-button>
       </el-form>
     </el-aside>
@@ -39,11 +35,13 @@
           <template #header>
             <div class="card-header">
               <span>주식 데이터 리스트</span>
-              <el-tag type="success" v-if="filteredStocks.length > 0">불러오기 성공</el-tag>
+              <el-tag :type="allRawData.length > 0 ? 'success' : 'danger'">
+                수신 데이터: {{ allRawData.length }}건
+              </el-tag>
             </div>
           </template>
           
-          <el-table :data="filteredStocks" stripe height="350" highlight-current-row @current-change="handleRowClick" empty-text="데이터가 없습니다. 새로고침을 눌러보세요.">
+          <el-table :data="filteredStocks" stripe height="350" highlight-current-row @current-change="handleRowClick" empty-text="데이터 구조를 확인 중이거나 결과가 없습니다.">
             <el-table-column prop="ticker" label="티커" width="100" fixed sortable />
             <el-table-column prop="price" label="현재가" align="right" />
             <el-table-column prop="per" label="PER" align="right" sortable />
@@ -79,24 +77,35 @@ const finalSearchQuery = ref('');
 const finalFilterBlueChip = ref(false);
 const finalFilterLowPer = ref(false);
 
-// 백엔드 주소 확인
 const API_URL = 'https://sj-fi.onrender.com/stocks';
 
-// 데이터 가공 및 중복 제거 (키 이름을 안전하게 매핑)
+// 어떤 이름으로 데이터가 오든 찾아내는 매퍼 함수
+const getValue = (obj, keys) => {
+  for (const key of keys) {
+    if (obj[key] !== undefined && obj[key] !== null) return obj[key];
+  }
+  return 0;
+};
+
 const uniqueStocks = computed(() => {
   const map = new Map();
+  if (!Array.isArray(allRawData.value)) return [];
+
   allRawData.value.forEach(item => {
-    if (!item.ticker) return;
-    const ticker = String(item.ticker).trim().toUpperCase();
+    // 티커 찾기 (ticker, Ticker, CODE, code 등)
+    const tickerRaw = getValue(item, ['ticker', 'Ticker', 'code', 'CODE', 'symbol']);
+    if (!tickerRaw) return;
     
-    // 백엔드 데이터 키가 대문자일 수도, 소문자일 수도 있어 안전하게 처리합니다.
+    const ticker = String(tickerRaw).trim().toUpperCase();
+    
+    // 데이터 매핑 (백엔드 컬럼명에 맞춰 자동 탐색)
     map.set(ticker, {
       ticker: ticker,
-      price: item.price || item.PRICE || 0,
-      per: item.per || item.PER || 0,
-      pbr: item.pbr || item.PBR || 0,
-      roe: item.roe || item.ROE || 0,
-      peg: item.peg || item.PEG || 0
+      price: getValue(item, ['price', 'PRICE', 'current_price', '현재가']),
+      per: getValue(item, ['per', 'PER', 'per_ratio']),
+      pbr: getValue(item, ['pbr', 'PBR', 'pbr_ratio']),
+      roe: getValue(item, ['roe', 'ROE', 'roe_ratio']),
+      peg: getValue(item, ['peg', 'PEG', 'peg_ratio'])
     }); 
   });
   return Array.from(map.values()).sort((a, b) => a.ticker.localeCompare(b.ticker));
@@ -105,8 +114,8 @@ const uniqueStocks = computed(() => {
 const filteredStocks = computed(() => {
   return uniqueStocks.value.filter(s => {
     const nameMatch = finalSearchQuery.value ? s.ticker === finalSearchQuery.value : true;
-    const roeMatch = finalFilterBlueChip.value ? parseFloat(s.roe) > 15 : true;
-    const perMatch = finalFilterLowPer.value ? (parseFloat(s.per) > 0 && parseFloat(s.per) < 15) : true;
+    const roeMatch = finalFilterBlueChip.value ? parseFloat(s.roe) >= 15 : true;
+    const perMatch = finalFilterLowPer.value ? (parseFloat(s.per) > 0 && parseFloat(s.per) <= 15) : true;
     return nameMatch && roeMatch && perMatch;
   });
 });
@@ -114,7 +123,7 @@ const filteredStocks = computed(() => {
 const summaryStats = computed(() => {
   const s = selectedStock.value;
   return {
-    "현재가": s ? `$${s.price}` : '-',
+    "현재가": s ? `${s.price}` : '-',
     "PER": s ? s.per : '-',
     "PBR": s ? s.pbr : '-',
     "ROE": s ? `${s.roe}%` : '-',
@@ -126,22 +135,23 @@ const applyFilters = () => {
   finalSearchQuery.value = tempSearchQuery.value;
   finalFilterBlueChip.value = tempFilterBlueChip.value;
   finalFilterLowPer.value = tempFilterLowPer.value;
-  fetchStocks(); // 버튼 클릭 시에만 다시 호출
+  fetchStocks();
 };
 
 const fetchStocks = async () => {
   loading.value = true;
   try {
     const response = await axios.get(API_URL);
-    console.log("받은 데이터 샘플:", response.data[0]); // 디버깅용 로그
-    allRawData.value = response.data;
+    // 중요: 응답 데이터가 배열인지, 아니면 객체 안에 배열이 있는지 확인
+    const data = Array.isArray(response.data) ? response.data : (response.data.stocks || response.data.data || []);
+    allRawData.value = data;
     
     await nextTick();
     if (filteredStocks.value.length > 0) {
       handleRowClick(filteredStocks.value[0]);
     }
   } catch (error) {
-    console.error("통신 에러:", error);
+    console.error("API 연결 실패:", error);
   } finally {
     loading.value = false;
   }
