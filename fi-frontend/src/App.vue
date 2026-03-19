@@ -42,7 +42,12 @@
         <el-card class="section-card">
           <template #header>
             <div class="card-header">
-              <span class="title-text">전체 데이터 상세 영역</span>
+              <div class="title-group">
+                <span class="title-text">전체 데이터 상세 영역</span>
+                <el-tag type="info" effect="plain" class="date-range-tag">
+                  📅 {{ finalStartDate || '전체' }} ~ {{ finalEndDate || '현재' }}
+                </el-tag>
+              </div>
               <el-tag type="success">검색 결과: {{ filteredData.length }}건</el-tag>
             </div>
           </template>
@@ -109,7 +114,6 @@ import axios from 'axios';
 import Chart from 'chart.js/auto';
 import * as XLSX from 'xlsx';
 
-// --- 기본 상태 ---
 const allRawData = ref([]); 
 const loading = ref(false);
 const selectedStock = ref(null);
@@ -132,7 +136,6 @@ const finalFilterLowPer = ref(false);
 
 const API_URL = 'https://sj-fi.onrender.com/stocks';
 
-// --- 유틸 함수 ---
 const formatCurrency = (val, prefix = '', suffix = '') => {
   if (!val) return prefix + ' 0.00 ' + suffix;
   const num = parseFloat(val);
@@ -141,7 +144,6 @@ const formatCurrency = (val, prefix = '', suffix = '') => {
   return `${prefix}${parts.join('.')}${suffix}`;
 };
 
-// --- 데이터 로직 ---
 const tickerList = computed(() => {
   const tickers = allRawData.value.map(item => (item.ticker || item.Ticker || '').trim().toUpperCase());
   return [...new Set(tickers)].filter(Boolean).sort();
@@ -169,7 +171,6 @@ const paginatedData = computed(() => {
   return filteredData.value.slice(start, start + pageSize.value);
 });
 
-// --- 메서드 ---
 const exportToExcel = () => {
   if (filteredData.value.length === 0) return;
   const exportData = filteredData.value.map((item, index) => ({
@@ -295,25 +296,19 @@ onMounted(fetchStocks);
 .main-content { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .scroll-area { padding: 20px; overflow-y: auto; }
 .section-card { margin-bottom: 20px; border-radius: 8px; }
+
+/* [수정] 헤더 타이틀 그룹 정렬 */
 .card-header { display: flex; justify-content: space-between; align-items: center; }
+.title-group { display: flex; align-items: center; gap: 15px; }
+.date-range-tag { font-size: 0.85rem; padding: 0 10px; height: 28px; line-height: 26px; font-weight: 500; }
+
 .pagination-container { margin-top: 15px; display: flex; justify-content: center; }
 .chart-container { height: 400px; }
 .canvas-wrapper { height: 320px; }
 .w-100 { width: 100%; }
 
-/* [수정] 버튼 정렬 스타일 */
-.button-group {
-  margin-top: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.sidebar-btn {
-  width: 100% !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  display: block;
-}
+.button-group { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+.sidebar-btn { width: 100% !important; margin-left: 0 !important; margin-right: 0 !important; display: block; }
 
 .currency-usd { color: #67c23a; font-weight: bold; }
 .currency-krw { color: #409eff; font-weight: bold; }
