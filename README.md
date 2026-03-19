@@ -41,7 +41,7 @@ stepjump/fi
 # [CODESPACES 에서 백엔드 실행]
 ==========================================================================
 
-@stepjump ➜ /workspaces/fi/fi-frontend (main) $ npm run dev
+# @stepjump ➜ /workspaces/fi/fi-frontend (main) $ npm run dev
 
 ![alt text]({C685917C-92FA-4CCD-BCCA-F6840FCA3B39}.png)
 ==========================================================================
@@ -56,6 +56,8 @@ stepjump/fi
 ==========================================================================
 
 https://vercel.com/hyoung-buem-koos-projects
+
+![alt text]({8B3F32E1-DE60-4A3F-8341-8A7C52F776E7}.png)
 
 ![alt text]({50B68594-41A7-4408-9B84-B5B3C55396FC}.png)
 ==========================================================================
