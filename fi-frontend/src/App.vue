@@ -1,167 +1,189 @@
 <template>
-  <el-container class="layout-container">
-    <el-header>
-      <div class="header-content">
-        <h1 class="title">주식 실시간 모니터링 (Top 50)</h1>
-        <el-button type="primary" @click="fetchStocks" :loading="loading">
-          데이터 새로고침
-        </el-button>
+  <el-container class="dashboard-container">
+    <el-aside width="280px" class="sidebar">
+      <div class="sidebar-logo">
+        <h2 class="title">FI STOCK ANALYSIS</h2>
       </div>
-    </el-header>
+      
+      <el-form label-position="top" class="filter-section">
+        <el-divider content-position="left">종목 검색</el-divider>
+        <el-form-item>
+          <el-input v-model="searchQuery" placeholder="티커 입력 (예: AAPL)" clearable />
+        </el-form-item>
 
-    <el-main>
-      <div v-if="loading" class="loading-container">
-        <el-skeleton :rows="10" animated />
-      </div>
-
-      <el-empty v-else-if="stocks.length === 0" description="데이터를 불러올 수 없습니다." />
-
-      <el-table 
-        v-else 
-        :data="stocks" 
-        style="width: 100%" 
-        stripe 
-        highlight-current-row
-        @current-change="handleRowClick"
-      >
-        <el-table-column prop="ticker" label="종목코드" width="120" sortable />
+        <el-divider content-position="left">가치투자 필터</el-divider>
+        <el-form-item>
+          <el-checkbox v-model="filterBlueChip">우량주 (ROE > 15%)</el-checkbox>
+          <el-checkbox v-model="filterLowPer">저평가 (PER < 15)</el-checkbox>
+          <el-checkbox v-model="filterUnderValue">저PBR (PBR < 1.5)</el-checkbox>
+        </el-form-item>
         
-        <el-table-column label="현재가" align="right">
-          <template #default="scope">
-            {{ formatPrice(scope.row.price) }}
-          </template>
-        </el-table-column>
+        <el-button type="primary" class="full-width" @click="fetchStocks">데이터 동기화</el-button>
+      </el-form>
+    </el-aside>
 
-        <el-table-column label="변동률" align="right" width="120">
-          <template #default="scope">
-            <span :class="scope.row.change >= 0 ? 'text-red' : 'text-blue'">
-              {{ scope.row.change != null ? (scope.row.change >= 0 ? '+' : '') + scope.row.change.toFixed(2) + '%' : '-' }}              
-            </span>
-          </template>
-        </el-table-column>
+    <el-container class="main-layout">
+      <el-header height="auto" class="value-header">
+        <el-row :gutter="15">
+          <el-col :span="4.8" v-for="(val, label) in summaryStats" :key="label">
+            <el-card shadow="never" class="metric-card">
+              <div class="metric-label">{{ label }}</div>
+              <div class="metric-value">{{ val }}</div>
+            </el-card>
+          </el-col>
+        </el-row>
+      </el-header>
 
-        <el-table-column prop="volume" label="거래량" align="right" sortable>
-          <template #default="scope">
-            {{ formatVolume(scope.row.volume) }}
+      <el-main class="content-area">
+        <el-card class="section-card">
+          <template #header>
+            <div class="card-header">
+              <span>주요 종목 데이터 리스트</span>
+              <el-tag type="info">검색 결과: {{ filteredStocks.length }}건</el-tag>
+            </div>
           </template>
-        </el-table-column>
-      </el-table>
-    </el-main>
+          <el-table 
+            :data="filteredStocks" 
+            stripe 
+            height="320" 
+            style="width: 100%"
+            highlight-current-row
+            @current-change="handleRowClick"
+          >
+            <el-table-column prop="ticker" label="티커" width="100" fixed />
+            <el-table-column prop="price" label="현재가" align="right" />
+            <el-table-column prop="per" label="PER" align="right" sortable />
+            <el-table-column prop="pbr" label="PBR" align="right" sortable />
+            <el-table-column prop="roe" label="ROE (%)" align="right" sortable />
+            <el-table-column prop="peg" label="PEG" align="right" sortable />
+          </el-table>
+        </el-card>
 
-    <el-footer>
-      <p class="footer-text">© 2026 Stock Monitor. All rights reserved.</p>
-    </el-footer>
+        <el-card class="section-card chart-section">
+          <template #header>
+            <div class="card-header">
+              <span>{{ selectedStock?.ticker || '종목' }} 1년 주가 추이</span>
+            </div>
+          </template>
+          <div class="canvas-wrapper">
+            <canvas id="priceChart"></canvas>
+          </div>
+        </el-card>
+      </el-main>
+    </el-container>
   </el-container>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
-import { ElMessage } from 'element-plus'; // 알림 메시지용
+import Chart from 'chart.js/auto';
 
-// 상태 변수 정의
-const stocks = ref([]); // 주식 데이터 리스트
-const loading = ref(false); // 로딩 상태
+// 상태 관리
+const stocks = ref([]);
+const searchQuery = ref('');
+const filterBlueChip = ref(false);
+const filterLowPer = ref(false);
+const filterUnderValue = ref(false);
+const selectedStock = ref(null);
+let chartInstance = null;
 
-// ⚠️ 본인의 Render 백엔드 API 주소로 수정하세요!
-const API_BASE_URL = 'https://sj-fi.onrender.com';
+// 백엔드 주소 (Render)
+const API_URL = 'https://sj-fi.onrender.com/stocks';
 
-// 데이터를 백엔드에서 불러오는 함수
+// 필터링 로직
+const filteredStocks = computed(() => {
+  return stocks.value.filter(s => {
+    const nameMatch = s.ticker.toLowerCase().includes(searchQuery.value.toLowerCase());
+    const roeMatch = filterBlueChip.value ? s.roe > 15 : true;
+    const perMatch = filterLowPer.value ? (s.per > 0 && s.per < 15) : true;
+    const pbrMatch = filterUnderValue.value ? (s.pbr > 0 && s.pbr < 1.5) : true;
+    return nameMatch && roeMatch && perMatch && pbrMatch;
+  });
+});
+
+// 상단 요약 지표 계산
+const summaryStats = computed(() => {
+  const s = selectedStock.value;
+  return {
+    "현재가": s ? `$${s.price}` : '-',
+    "PER": s ? s.per : '-',
+    "PBR": s ? s.pbr : '-',
+    "ROE": s ? `${s.roe}%` : '-',
+    "PEG": s ? s.peg : '-'
+  };
+});
+
+// 데이터 가져오기
 const fetchStocks = async () => {
-  loading.value = true;
   try {
-    const response = await axios.get(`${API_BASE_URL}/stocks`);
-    // 백엔드 응답 형식이 { data: [...] } 인지 그냥 [...] 인지에 따라 수정 필요
-    // 여기서는 그냥 리스트[...] 형태로 온다고 가정합니다.
-    stocks.value = response.data; 
-    ElMessage.success('데이터 업데이트 완료');
+    const response = await axios.get(API_URL);
+    stocks.value = response.data;
+    if (stocks.value.length > 0) {
+      selectedStock.value = stocks.value[0];
+      initChart();
+    }
   } catch (error) {
-    console.error("데이터 로딩 실패:", error);
-    ElMessage.error('데이터를 불러오지 못했습니다. 백엔드 서버 상태를 확인하세요.');
-  } finally {
-    loading.value = false;
+    console.error("데이터 로드 실패:", error);
   }
 };
 
-// 표의 행(Row)을 클릭했을 때 상세 페이지로 이동하는 함수
+// 테이블 행 클릭 시 동작
 const handleRowClick = (row) => {
   if (row) {
-    // 나중에 상세 페이지(/stocks/{ticker})를 만들면 주석을 해제하세요.
-    // router.push(`/stocks/${row.ticker}`); 
-    ElMessage.info(`${row.ticker} 상세 페이지로 이동 예정`);
+    selectedStock.value = row;
+    updateChart(row.ticker);
   }
 };
 
-// 숫자 포맷팅 함수들
-const formatPrice = (value) => {
-  if (!value) return '-';
-  return value.toLocaleString('ko-KR', { style: 'currency', currency: 'KRW' });
+// 차트 초기화 및 업데이트
+const initChart = () => {
+  const ctx = document.getElementById('priceChart').getContext('2d');
+  chartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ['12개월 전', '9개월 전', '6개월 전', '3개월 전', '현재'],
+      datasets: [{
+        label: '주가 추이',
+        data: [100, 110, 105, 125, 120], // 실제 과거 데이터 API 연결 시 대체
+        borderColor: '#409EFF',
+        tension: 0.3,
+        fill: true,
+        backgroundColor: 'rgba(64, 158, 255, 0.1)'
+      }]
+    },
+    options: { responsive: true, maintainAspectRatio: false }
+  });
 };
 
-const formatVolume = (value) => {
-  if (!value) return '0';
-  return value.toLocaleString('ko-KR');
+const updateChart = (ticker) => {
+  if (chartInstance) {
+    // 임의의 데이터 변경 (나중에 백엔드 상세 데이터 API와 연결하세요)
+    chartInstance.data.datasets[0].label = `${ticker} 주가`;
+    chartInstance.data.datasets[0].data = Array.from({length: 5}, () => Math.floor(Math.random() * 100) + 100);
+    chartInstance.update();
+  }
 };
 
-// 화면이 처음 켜질 때 자동으로 데이터 로딩
 onMounted(fetchStocks);
 </script>
 
 <style scoped>
-/* CSS 스타일링 (Element Plus와 호환) */
-.layout-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}
+.dashboard-container { height: 100vh; background-color: #f0f2f5; }
+.sidebar { background-color: #fff; padding: 20px; border-right: 1px solid #e6e6e6; }
+.sidebar-logo { text-align: center; margin-bottom: 30px; }
+.title { font-size: 1.2rem; color: #409EFF; font-weight: bold; }
+.full-width { width: 100%; margin-top: 20px; }
 
-.el-header {
-  background-color: #fff;
-  color: #333;
-  line-height: 60px;
-  border-bottom: 1px solid #eee;
-  padding: 0 20px;
-}
+.main-layout { padding: 20px; }
+.value-header { margin-bottom: 20px; background: transparent; padding: 0; }
+.metric-card { text-align: center; border-radius: 8px; }
+.metric-label { font-size: 0.85rem; color: #909399; margin-bottom: 8px; }
+.metric-value { font-size: 1.2rem; font-weight: bold; color: #303133; }
 
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+.section-card { margin-bottom: 20px; border-radius: 8px; }
+.card-header { display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
 
-.title {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-
-.el-main {
-  padding: 20px 0;
-}
-
-.loading-container {
-  padding: 40px;
-}
-
-.text-red {
-  color: #f56c6c; /* Element Plus 빨간색 */
-  font-weight: bold;
-}
-
-.text-blue {
-  color: #409eff; /* Element Plus 파란색 */
-  font-weight: bold;
-}
-
-.el-footer {
-  text-align: center;
-  color: #909399;
-  border-top: 1px solid #eee;
-  padding: 20px 0;
-  margin-top: 20px;
-}
-
-.footer-text {
-  font-size: 0.9rem;
-}
+.chart-section { height: 350px; }
+.canvas-wrapper { height: 280px; }
 </style>
