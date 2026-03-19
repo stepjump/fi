@@ -65,9 +65,17 @@
               </template>
             </el-table-column>
 
-            <el-table-column prop="ticker" label="Ticker" width="90" fixed sortable />
-            <el-table-column prop="name" label="Name" width="120" show-overflow-tooltip />
-            <el-table-column prop="date" label="Date" width="110" sortable />
+            <el-table-column label="Ticker" width="90" fixed sortable>
+              <template #default="scope">{{ scope.row.ticker || scope.row.Ticker || scope.row.TICKER }}</template>
+            </el-table-column>
+            
+            <el-table-column label="Name" width="120" show-overflow-tooltip>
+              <template #default="scope">{{ scope.row.name || scope.row.Name || scope.row.NAME }}</template>
+            </el-table-column>
+
+            <el-table-column label="Date" width="110" sortable>
+              <template #default="scope">{{ scope.row.date || scope.row.Date || scope.row.DATE }}</template>
+            </el-table-column>
             
             <el-table-column label="USD Price" width="110" align="right">
               <template #default="scope">
@@ -124,7 +132,7 @@
           <template #header>
             <div class="card-header">
               <span class="title-text">가격 추이 분석 (KRW / USD 비교)</span>
-              <el-tag v-if="selectedStock" type="info">{{ selectedStock.ticker }} 분석 중</el-tag>
+              <el-tag v-if="selectedStock" type="info">{{ selectedStock.ticker || selectedStock.Ticker }} 분석 중</el-tag>
             </div>
           </template>
           <div class="canvas-wrapper"><canvas id="mainPriceChart"></canvas></div>
@@ -140,7 +148,6 @@ import axios from 'axios';
 import Chart from 'chart.js/auto';
 import * as XLSX from 'xlsx';
 
-// --- 상태 관리 ---
 const allRawData = ref([]); 
 const loading = ref(false);
 const selectedStock = ref(null);
@@ -163,7 +170,6 @@ const finalFilterLowPer = ref(false);
 
 const API_URL = 'https://sj-fi.onrender.com/stocks';
 
-// --- 포맷팅 ---
 const formatCurrency = (val, prefix = '', suffix = '') => {
   if (val === undefined || val === null || val === '') return prefix + ' - ' + suffix;
   const num = parseFloat(val);
@@ -171,18 +177,15 @@ const formatCurrency = (val, prefix = '', suffix = '') => {
   return `${prefix}${num.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}${suffix}`;
 };
 
-// --- 데이터 필터링 로직 ---
 const tickerList = computed(() => {
-  const tickers = allRawData.value.map(item => (item.ticker || item.Ticker || '').trim().toUpperCase());
+  const tickers = allRawData.value.map(item => (item.ticker || item.Ticker || item.TICKER || '').trim().toUpperCase());
   return [...new Set(tickers)].filter(Boolean).sort();
 });
 
 const filteredData = computed(() => {
   return allRawData.value.filter(item => {
-    const t = (item.ticker || item.Ticker || '').trim().toUpperCase();
-    const d = item.date || item.Date || '';
-    
-    // 필터용 값 추출 (대소문자 무관)
+    const t = (item.ticker || item.Ticker || item.TICKER || '').trim().toUpperCase();
+    const d = item.date || item.Date || item.DATE || '';
     const roeVal = parseFloat(item.roe || item.ROE || 0);
     const perVal = parseFloat(item.per || item.PER || 0);
 
@@ -201,14 +204,13 @@ const paginatedData = computed(() => {
   return filteredData.value.slice(start, start + pageSize.value);
 });
 
-// --- 메서드 ---
 const exportToExcel = () => {
   if (filteredData.value.length === 0) return;
   const exportData = filteredData.value.map((item, index) => ({
     "No": index + 1,
-    "Ticker": item.ticker || item.Ticker,
-    "Name": item.name || item.NAME,
-    "Date": item.date || item.Date,
+    "Ticker": item.ticker || item.Ticker || item.TICKER,
+    "Name": item.name || item.Name || item.NAME,
+    "Date": item.date || item.Date || item.DATE,
     "Price(USD)": item.usd_price || item.USD_PRICE || item.price,
     "Price(KRW)": item.krw_price || item.KRW_PRICE,
     "PER": item.per || item.PER,
@@ -222,8 +224,8 @@ const exportToExcel = () => {
   }));
   const worksheet = XLSX.utils.json_to_sheet(exportData);
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, "FI_Metrics");
-  XLSX.writeFile(workbook, `FI_Analysis_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  XLSX.utils.book_append_sheet(workbook, worksheet, "StockData");
+  XLSX.writeFile(workbook, `FI_Data_${new Date().toISOString().slice(0, 10)}.xlsx`);
 };
 
 const applyFilters = () => {
@@ -245,7 +247,7 @@ const fetchStocks = async () => {
     const response = await axios.get(API_URL);
     allRawData.value = Array.isArray(response.data) ? response.data : (response.data.stocks || []);
   } catch (error) {
-    console.error("데이터 로드 오류:", error);
+    console.error("Fetch Error:", error);
   } finally {
     loading.value = false;
   }
@@ -254,7 +256,7 @@ const fetchStocks = async () => {
 const handleRowClick = (row) => {
   if (row) {
     selectedStock.value = row;
-    updateChart(row.ticker || row.Ticker);
+    updateChart(row.ticker || row.Ticker || row.TICKER);
   }
 };
 
@@ -264,14 +266,14 @@ const updateChart = (ticker) => {
   if (chartInstance) chartInstance.destroy();
 
   const history = allRawData.value
-    .filter(s => (s.ticker || s.Ticker) === ticker)
-    .sort((a, b) => (a.date || a.Date).localeCompare(b.date || b.Date))
+    .filter(s => (s.ticker || s.Ticker || s.TICKER) === ticker)
+    .sort((a, b) => (a.date || a.Date || a.DATE).localeCompare(b.date || b.Date || b.DATE))
     .slice(-30);
 
   chartInstance = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: history.map(h => h.date || h.Date),
+      labels: history.map(h => h.date || h.Date || h.DATE),
       datasets: [
         {
           label: 'KRW Price (원)',
