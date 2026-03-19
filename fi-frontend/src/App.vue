@@ -69,9 +69,21 @@
               </template>
             </el-table-column>
 
-            <el-table-column label="PER" width="85" align="right" sortable>
+            <!-- <el-table-column label="PER" width="85" align="right" sortable>
               <template #default="scope">{{ formatMetric(scope.row.per || scope.row.PER) }}</template>
+            </el-table-column> -->
+
+
+
+            <el-table-column label="PER" width="120" align="right">
+              <template #default="scope">
+                <span class="scope">{{ formatCurrency(scope.row.per || scope.row.per) }}</span>
+              </template>
             </el-table-column>
+
+
+
+
             <el-table-column label="PBR" width="85" align="right" sortable>
               <template #default="scope">{{ formatMetric(scope.row.pbr || scope.row.PBR) }}</template>
             </el-table-column>
