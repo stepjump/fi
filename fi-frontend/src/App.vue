@@ -1,12 +1,12 @@
 <template>
-  <el-container class="dashboard-wrapper" v-loading="loading" element-loading-text="데이터를 분석 중입니다...">
+  <el-container class="dashboard-wrapper" v-loading="loading" element-loading-text="전체 데이터를 불러오는 중입니다...">
     <el-aside width="260px" class="sidebar">
       <div class="sidebar-header"><h2 class="brand">FI Analysis</h2></div>
       <el-form class="filter-form" label-position="top">
         <el-divider content-position="left">종목 선택</el-divider>
         <el-form-item label="종목 리스트">
           <el-select v-model="tempSearchQuery" placeholder="종목 선택" clearable filterable class="w-100">
-            <el-option v-for="item in uniqueStocks" :key="item.ticker" :label="item.ticker" :value="item.ticker" />
+            <el-option v-for="item in uniqueStocks" :key="item.ticker" :label="`${item.ticker} (${item.name})`" :value="item.ticker" />
           </el-select>
         </el-form-item>
         <el-divider content-position="left">가치투자 필터</el-divider>
@@ -20,11 +20,11 @@
 
     <el-container class="main-content">
       <el-header height="auto" class="stats-header">
-        <el-row :gutter="20">
-          <el-col :span="4" v-for="(val, label) in summaryStats" :key="label">
+        <el-row :gutter="10">
+          <el-col :span="3" v-for="(val, label) in summaryStats" :key="label">
             <el-card shadow="hover" class="stat-card">
               <div class="stat-label">{{ label }}</div>
-              <div class="stat-value">{{ val }}</div>
+              <div class="stat-value small-text">{{ val }}</div>
             </el-card>
           </el-col>
         </el-row>
@@ -34,20 +34,26 @@
         <el-card class="section-card">
           <template #header>
             <div class="card-header">
-              <span>주식 데이터 리스트</span>
-              <el-tag :type="allRawData.length > 0 ? 'success' : 'danger'">
-                수신 데이터: {{ allRawData.length }}건
-              </el-tag>
+              <span>전체 데이터 영역</span>
+              <el-tag type="info">총 {{ filteredStocks.length }}건</el-tag>
             </div>
           </template>
           
-          <el-table :data="filteredStocks" stripe height="350" highlight-current-row @current-change="handleRowClick" empty-text="데이터 구조를 확인 중이거나 결과가 없습니다.">
-            <el-table-column prop="ticker" label="티커" width="100" fixed sortable />
-            <el-table-column prop="price" label="현재가" align="right" />
-            <el-table-column prop="per" label="PER" align="right" sortable />
-            <el-table-column prop="pbr" label="PBR" align="right" sortable />
-            <el-table-column prop="roe" label="ROE (%)" align="right" sortable />
-            <el-table-column prop="peg" label="PEG" align="right" sortable />
+          <el-table :data="filteredStocks" stripe height="400" highlight-current-row @current-change="handleRowClick" border style="width: 100%">
+            <el-table-column prop="ticker" label="Ticker" width="90" fixed sortable />
+            <el-table-column prop="name" label="Name" width="120" show-overflow-tooltip />
+            <el-table-column prop="date" label="Date" width="100" sortable />
+            <el-table-column prop="usd_price" label="USD Price" width="100" align="right" />
+            <el-table-column prop="krw_price" label="KRW Price" width="110" align="right" />
+            <el-table-column prop="close" label="Close" width="90" align="right" />
+            <el-table-column prop="per" label="PER" width="80" align="right" sortable />
+            <el-table-column prop="pbr" label="PBR" width="80" align="right" sortable />
+            <el-table-column prop="psr" label="PSR" width="80" align="right" sortable />
+            <el-table-column prop="pcr" label="PCR" width="80" align="right" sortable />
+            <el-table-column prop="roe" label="ROE (%)" width="90" align="right" sortable />
+            <el-table-column prop="eps" label="EPS" width="90" align="right" sortable />
+            <el-table-column prop="peg" label="PEG" width="80" align="right" sortable />
+            <el-table-column prop="dividend_yield" label="Div. Yield" width="110" align="right" sortable />
           </el-table>
         </el-card>
 
@@ -79,10 +85,11 @@ const finalFilterLowPer = ref(false);
 
 const API_URL = 'https://sj-fi.onrender.com/stocks';
 
-// 어떤 이름으로 데이터가 오든 찾아내는 매퍼 함수
-const getValue = (obj, keys) => {
+// 데이터 유연 매핑 함수
+const v = (obj, keys) => {
   for (const key of keys) {
-    if (obj[key] !== undefined && obj[key] !== null) return obj[key];
+    const val = obj[key] ?? obj[key.toUpperCase()] ?? obj[key.toLowerCase()];
+    if (val !== undefined && val !== null) return val;
   }
   return 0;
 };
@@ -92,20 +99,26 @@ const uniqueStocks = computed(() => {
   if (!Array.isArray(allRawData.value)) return [];
 
   allRawData.value.forEach(item => {
-    // 티커 찾기 (ticker, Ticker, CODE, code 등)
-    const tickerRaw = getValue(item, ['ticker', 'Ticker', 'code', 'CODE', 'symbol']);
+    const tickerRaw = v(item, ['ticker', 'symbol', 'code']);
     if (!tickerRaw) return;
     
     const ticker = String(tickerRaw).trim().toUpperCase();
     
-    // 데이터 매핑 (백엔드 컬럼명에 맞춰 자동 탐색)
     map.set(ticker, {
       ticker: ticker,
-      price: getValue(item, ['price', 'PRICE', 'current_price', '현재가']),
-      per: getValue(item, ['per', 'PER', 'per_ratio']),
-      pbr: getValue(item, ['pbr', 'PBR', 'pbr_ratio']),
-      roe: getValue(item, ['roe', 'ROE', 'roe_ratio']),
-      peg: getValue(item, ['peg', 'PEG', 'peg_ratio'])
+      name: v(item, ['name', 'company_name']) || 'N/A',
+      date: v(item, ['date', 'update_date']) || '-',
+      usd_price: v(item, ['usd_price', 'price_usd']),
+      krw_price: v(item, ['krw_price', 'price_krw']),
+      close: v(item, ['close', 'closed_price']),
+      per: v(item, ['per']),
+      pbr: v(item, ['pbr']),
+      psr: v(item, ['psr']),
+      pcr: v(item, ['pcr']),
+      roe: v(item, ['roe']),
+      eps: v(item, ['eps']),
+      peg: v(item, ['peg']),
+      dividend_yield: v(item, ['dividend_yield', 'div_yield'])
     }); 
   });
   return Array.from(map.values()).sort((a, b) => a.ticker.localeCompare(b.ticker));
@@ -123,11 +136,13 @@ const filteredStocks = computed(() => {
 const summaryStats = computed(() => {
   const s = selectedStock.value;
   return {
-    "현재가": s ? `${s.price}` : '-',
+    "Ticker": s ? s.ticker : '-',
+    "USD Price": s ? `$${s.usd_price}` : '-',
+    "ROE": s ? `${s.roe}%` : '-',
     "PER": s ? s.per : '-',
     "PBR": s ? s.pbr : '-',
-    "ROE": s ? `${s.roe}%` : '-',
-    "PEG": s ? s.peg : '-'
+    "EPS": s ? s.eps : '-',
+    "Div.Y": s ? `${s.dividend_yield}%` : '-'
   };
 });
 
@@ -142,16 +157,12 @@ const fetchStocks = async () => {
   loading.value = true;
   try {
     const response = await axios.get(API_URL);
-    // 중요: 응답 데이터가 배열인지, 아니면 객체 안에 배열이 있는지 확인
-    const data = Array.isArray(response.data) ? response.data : (response.data.stocks || response.data.data || []);
+    const data = Array.isArray(response.data) ? response.data : (response.data.stocks || []);
     allRawData.value = data;
-    
     await nextTick();
-    if (filteredStocks.value.length > 0) {
-      handleRowClick(filteredStocks.value[0]);
-    }
+    if (filteredStocks.value.length > 0) handleRowClick(filteredStocks.value[0]);
   } catch (error) {
-    console.error("API 연결 실패:", error);
+    console.error("Fetch error:", error);
   } finally {
     loading.value = false;
   }
@@ -166,18 +177,17 @@ const handleRowClick = (row) => {
 
 const updateChart = (ticker) => {
   const ctx = document.getElementById('mainPriceChart')?.getContext('2d');
-  if (!ctx) return;
+  if (!ctx || !ticker) return;
   if (chartInstance) chartInstance.destroy();
   chartInstance = new Chart(ctx, {
     type: 'line',
     data: {
       labels: ['12M', '9M', '6M', '3M', 'Now'],
       datasets: [{
-        label: `${ticker} Price`,
+        label: `${ticker} Trend`,
         data: Array.from({length: 5}, () => Math.floor(Math.random() * 50) + 100),
         borderColor: '#409eff',
-        fill: true,
-        backgroundColor: 'rgba(64, 158, 255, 0.1)'
+        tension: 0.4
       }]
     },
     options: { responsive: true, maintainAspectRatio: false }
@@ -190,15 +200,16 @@ onMounted(fetchStocks);
 <style scoped>
 .dashboard-wrapper { height: 100vh; background-color: #f5f7fa; display: flex; overflow: hidden; }
 .sidebar { background: #fff; border-right: 1px solid #dcdfe6; padding: 20px; }
-.brand { color: #409eff; font-size: 1.5rem; margin-bottom: 30px; text-align: center; }
-.main-content { display: flex; flex-direction: column; flex: 1; }
-.stats-header { padding: 20px; background: #fff; border-bottom: 1px solid #dcdfe6; }
-.stat-card { text-align: center; background: #f9fafc; }
-.stat-label { font-size: 12px; color: #909399; margin-bottom: 5px; }
-.stat-value { font-size: 18px; font-weight: bold; color: #303133; }
-.scroll-area { padding: 20px; overflow-y: auto; }
-.section-card { margin-bottom: 20px; }
-.chart-container { height: 350px; }
-.canvas-wrapper { height: 280px; }
+.brand { color: #409eff; font-size: 1.3rem; margin-bottom: 25px; text-align: center; font-weight: bold; }
+.main-content { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.stats-header { padding: 15px; background: #fff; border-bottom: 1px solid #dcdfe6; }
+.stat-card { text-align: center; background: #f9fafc; border: none; }
+.stat-label { font-size: 11px; color: #909399; margin-bottom: 4px; }
+.stat-value { font-size: 14px; font-weight: bold; color: #303133; white-space: nowrap; }
+.small-text { font-size: 13px !important; }
+.scroll-area { padding: 15px; overflow-y: auto; }
+.section-card { margin-bottom: 15px; }
+.chart-container { height: 300px; }
+.canvas-wrapper { height: 240px; }
 .w-100 { width: 100%; }
 </style>
