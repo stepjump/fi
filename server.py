@@ -107,11 +107,52 @@ def get_db():
     try: yield db
     finally: db.close()
 
+# @app.get("/stocks")
+# def get_all_stocks(db: Session = Depends(get_db)):
+#     stocks = db.query(DailyPrice.ticker, DailyPrice.date, DailyPrice.name, DailyPrice.usd_price, DailyPrice.krw_price).distinct().all()
+
+#     return [{"ticker": s.ticker, "date": s.date, "name": s.name, "usd_price": s.usd_price, "krw_price": s.krw_price} for s in stocks]
+
+
 @app.get("/stocks")
 def get_all_stocks(db: Session = Depends(get_db)):
-    stocks = db.query(DailyPrice.ticker, DailyPrice.date, DailyPrice.name, DailyPrice.usd_price, DailyPrice.krw_price).distinct().all()
+    # 1. 조회할 컬럼들을 모두 추가합니다.
+    stocks = db.query(
+        DailyPrice.ticker, 
+        DailyPrice.date, 
+        DailyPrice.name, 
+        DailyPrice.usd_price, 
+        DailyPrice.krw_price,
+        DailyPrice.per,     # 추가
+        DailyPrice.pbr,     # 추가
+        DailyPrice.psr,     # 추가
+        DailyPrice.pcr,     # 추가
+        DailyPrice.roe,     # 추가
+        DailyPrice.eps,     # 추가
+        DailyPrice.peg,     # 추가
+        DailyPrice.dividend_yield  # 추가
+    ).distinct().all()
 
-    return [{"ticker": s.ticker, "date": s.date, "name": s.name, "usd_price": s.usd_price, "krw_price": s.krw_price} for s in stocks]
+    # 2. 리턴하는 리스트 컴프리헨션에도 해당 값들을 매핑해줍니다.
+    return {
+        "history": [
+            {
+                "ticker": s.ticker, 
+                "date": s.date, 
+                "name": s.name, 
+                "usd_price": s.usd_price, 
+                "krw_price": s.krw_price,
+                "per": s.per,
+                "pbr": s.pbr,
+                "psr": s.psr,
+                "pcr": s.pcr,
+                "roe": s.roe,
+                "eps": s.eps,
+                "peg": s.peg,
+                "dividend_yield": s.dividend_yield
+            } for s in stocks
+        ]
+    }
 
 
 
