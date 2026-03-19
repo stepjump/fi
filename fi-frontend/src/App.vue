@@ -1,5 +1,5 @@
 <template>
-  <el-container class="dashboard-wrapper" v-loading="loading" element-loading-text="전체 데이터를 불러오는 중입니다...">
+  <el-container class="dashboard-wrapper" v-loading="loading" element-loading-text="데이터를 불러오는 중입니다...">
     <el-aside width="260px" class="sidebar">
       <div class="sidebar-header"><h2 class="brand">FI Analysis</h2></div>
       <el-form class="filter-form" label-position="top">
@@ -43,9 +43,17 @@
             <el-table-column prop="ticker" label="Ticker" width="90" fixed sortable />
             <el-table-column prop="name" label="Name" width="120" show-overflow-tooltip />
             <el-table-column prop="date" label="Date" width="100" sortable />
-            <el-table-column prop="usd_price" label="USD Price" width="100" align="right" />
-            <el-table-column prop="krw_price" label="KRW Price" width="110" align="right" />
-            <el-table-column prop="close" label="Close" width="90" align="right" />
+            
+            <el-table-column prop="usd_price" label="USD Price" width="120" align="right">
+              <template #default="scope">{{ formatDecimal(scope.row.usd_price) }}</template>
+            </el-table-column>
+            <el-table-column prop="krw_price" label="KRW Price" width="130" align="right">
+              <template #default="scope">{{ formatDecimal(scope.row.krw_price) }}</template>
+            </el-table-column>
+            
+            <el-table-column prop="close" label="Close" width="110" align="right">
+              <template #default="scope">{{ formatDecimal(scope.row.close) }}</template>
+            </el-table-column>
             <el-table-column prop="per" label="PER" width="80" align="right" sortable />
             <el-table-column prop="pbr" label="PBR" width="80" align="right" sortable />
             <el-table-column prop="psr" label="PSR" width="80" align="right" sortable />
@@ -84,6 +92,12 @@ const finalFilterBlueChip = ref(false);
 const finalFilterLowPer = ref(false);
 
 const API_URL = 'https://sj-fi.onrender.com/stocks';
+
+// 소수점 4자리 변환 함수
+const formatDecimal = (val) => {
+  const num = parseFloat(val);
+  return isNaN(num) ? '0.0000' : num.toFixed(4);
+};
 
 // 데이터 유연 매핑 함수
 const v = (obj, keys) => {
@@ -137,7 +151,7 @@ const summaryStats = computed(() => {
   const s = selectedStock.value;
   return {
     "Ticker": s ? s.ticker : '-',
-    "USD Price": s ? `$${s.usd_price}` : '-',
+    "USD Price": s ? formatDecimal(s.usd_price) : '-',
     "ROE": s ? `${s.roe}%` : '-',
     "PER": s ? s.per : '-',
     "PBR": s ? s.pbr : '-',
@@ -198,6 +212,7 @@ onMounted(fetchStocks);
 </script>
 
 <style scoped>
+/* 이전 스타일 유지 */
 .dashboard-wrapper { height: 100vh; background-color: #f5f7fa; display: flex; overflow: hidden; }
 .sidebar { background: #fff; border-right: 1px solid #dcdfe6; padding: 20px; }
 .brand { color: #409eff; font-size: 1.3rem; margin-bottom: 25px; text-align: center; font-weight: bold; }
