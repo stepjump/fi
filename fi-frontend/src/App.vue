@@ -1,5 +1,5 @@
 <template>
-  <el-container class="dashboard-wrapper" v-loading="loading" element-loading-text="데이터를 불러오는 중입니다...">
+  <el-container class="dashboard-wrapper" v-loading="loading" element-loading-text="데이터를 정제하는 중입니다...">
     
     <el-aside width="260px" class="sidebar">
       <div class="sidebar-header">
@@ -8,7 +8,7 @@
       
       <el-form class="filter-form" label-position="top">
         <el-divider content-position="left">종목 선택</el-divider>
-        <el-form-item label="종목 리스트 (Top 50)">
+        <el-form-item label="종목 리스트 (유니크 50)">
           <el-select 
             v-model="tempSearchQuery" 
             placeholder="종목을 선택하세요" 
@@ -17,7 +17,7 @@
             class="w-100"
           >
             <el-option
-              v-for="item in stocks"
+              v-for="item in uniqueStocks"
               :key="item.ticker"
               :label="item.ticker"
               :value="item.ticker"
@@ -51,7 +51,7 @@
         <el-card class="section-card">
           <template #header>
             <div class="card-header">
-              <span>주식 데이터 리스트</span>
+              <span>주식 데이터 리스트 (중복 제거 완료)</span>
               <el-tag type="success">결과: {{ filteredStocks.length }}건</el-tag>
             </div>
           </template>
@@ -85,27 +85,46 @@ import { ref, computed, onMounted, nextTick } from 'vue';
 import axios from 'axios';
 import Chart from 'chart.js/auto';
 
-const stocks = ref([]);
+const allRawData = ref([]); 
 const loading = ref(false);
 const selectedStock = ref(null);
 let chartInstance = null;
 
-// 임시 필터 상태 (콤보박스 및 체크박스용)
 const tempSearchQuery = ref('');
 const tempFilterBlueChip = ref(false);
 const tempFilterLowPer = ref(false);
 
-// 확정된 필터 상태 (버튼 클릭 시 적용됨)
 const finalSearchQuery = ref('');
 const finalFilterBlueChip = ref(false);
 const finalFilterLowPer = ref(false);
 
 const API_URL = 'https://sj-fi.onrender.com/stocks';
 
-// 필터링 로직
+/**
+ * [핵심 로직] 중복 제거 강화 버전
+ * 1. 티커의 앞뒤 공백을 제거합니다 (.trim())
+ * 2. 모든 티커를 대문자로 바꿉니다 (.toUpperCase())
+ * 3. Map을 사용하여 중복을 제거합니다.
+ */
+const uniqueStocks = computed(() => {
+  const map = new Map();
+  if (!allRawData.value || allRawData.value.length === 0) return [];
+
+  allRawData.value.forEach(item => {
+    if (item.ticker) {
+      const cleanTicker = String(item.ticker).trim().toUpperCase();
+      // 같은 티커가 들어오면 마지막(최신) 데이터로 덮어씁니다.
+      map.set(cleanTicker, { ...item, ticker: cleanTicker }); 
+    }
+  });
+  
+  // 티커 순으로 정렬하여 반환 (콤보박스에서 보기 편하게)
+  return Array.from(map.values()).sort((a, b) => a.ticker.localeCompare(b.ticker));
+});
+
+// 필터링 로직 (uniqueStocks 기반)
 const filteredStocks = computed(() => {
-  return stocks.value.filter(s => {
-    // 종목이 선택되지 않았을 때는 전체를 보여주고, 선택되었을 때만 해당 종목만 필터링합니다.
+  return uniqueStocks.value.filter(s => {
     const nameMatch = finalSearchQuery.value ? s.ticker === finalSearchQuery.value : true;
     const roeMatch = finalFilterBlueChip.value ? s.roe > 15 : true;
     const perMatch = finalFilterLowPer.value ? (s.per > 0 && s.per < 15) : true;
@@ -128,6 +147,7 @@ const applyFilters = async () => {
   finalSearchQuery.value = tempSearchQuery.value;
   finalFilterBlueChip.value = tempFilterBlueChip.value;
   finalFilterLowPer.value = tempFilterLowPer.value;
+  // 버튼 클릭 시 데이터를 다시 불러와서 최신 상태 유지
   await fetchStocks();
 };
 
@@ -135,12 +155,13 @@ const fetchStocks = async () => {
   loading.value = true;
   try {
     const response = await axios.get(API_URL, { timeout: 60000 });
-    stocks.value = response.data;
-    if (stocks.value.length > 0) {
-      await nextTick();
-      // 필터링된 결과가 있으면 첫 번째 항목을 기본 선택
-      if (filteredStocks.value.length > 0) {
-        handleRowClick(filteredStocks.value[0]);
+    allRawData.value = response.data; 
+    
+    await nextTick();
+    if (filteredStocks.value.length > 0) {
+      // 데이터 로드 시 첫 번째 종목 자동 선택
+      if (!selectedStock.value || !filteredStocks.value.find(s => s.ticker === selectedStock.value.ticker)) {
+         handleRowClick(filteredStocks.value[0]);
       }
     }
   } catch (error) {
@@ -169,7 +190,9 @@ const updateChart = (ticker) => {
         label: `${ticker} Price Trend`,
         data: Array.from({length: 5}, () => Math.floor(Math.random() * 50) + 150),
         borderColor: '#409eff',
-        tension: 0.4
+        tension: 0.4,
+        fill: true,
+        backgroundColor: 'rgba(64, 158, 255, 0.1)'
       }]
     },
     options: { responsive: true, maintainAspectRatio: false }
@@ -180,7 +203,7 @@ onMounted(fetchStocks);
 </script>
 
 <style scoped>
-/* 기존 스타일과 동일 */
+/* 이전 스타일과 동일 */
 .dashboard-wrapper { height: 100vh; background-color: #f5f7fa; display: flex; }
 .sidebar { background: #fff; border-right: 1px solid #dcdfe6; padding: 20px; display: flex; flex-direction: column; }
 .brand { color: #409eff; font-size: 1.5rem; margin-bottom: 30px; text-align: center; }
