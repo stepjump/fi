@@ -42,6 +42,12 @@
           </template>
           
           <el-table :data="paginatedData" stripe height="450" border style="width: 100%" @current-change="handleRowClick">
+            <el-table-column label="No." width="70" align="center" fixed>
+              <template #default="scope">
+                {{ (currentPage - 1) * pageSize + scope.$index + 1 }}
+              </template>
+            </el-table-column>
+
             <el-table-column prop="ticker" label="Ticker" width="100" fixed sortable />
             <el-table-column prop="name" label="Name" width="130" show-overflow-tooltip />
             <el-table-column prop="date" label="Date" width="110" sortable />
@@ -76,6 +82,7 @@
 </template>
 
 <script setup>
+// ... (script 부분은 이전과 동일하되 하단 pagination 로직 유지) ...
 import { ref, computed, onMounted, nextTick } from 'vue';
 import axios from 'axios';
 import Chart from 'chart.js/auto';
@@ -85,11 +92,9 @@ const loading = ref(false);
 const selectedStock = ref(null);
 let chartInstance = null;
 
-// 페이지네이션 상태
 const currentPage = ref(1);
 const pageSize = ref(50);
 
-// 필터 상태
 const startDate = ref('');
 const endDate = ref('');
 const tempSearchQuery = ref('');
@@ -109,13 +114,11 @@ const formatDecimal = (val) => {
   return isNaN(num) ? '0.0000' : num.toFixed(4);
 };
 
-// 티커 목록 추출
 const tickerList = computed(() => {
   const tickers = allRawData.value.map(item => (item.ticker || item.Ticker || '').trim().toUpperCase());
   return [...new Set(tickers)].filter(Boolean).sort();
 });
 
-// [1단계] 전체 데이터 필터링
 const filteredData = computed(() => {
   return allRawData.value.filter(item => {
     const t = (item.ticker || item.Ticker || '').trim().toUpperCase();
@@ -133,7 +136,6 @@ const filteredData = computed(() => {
   }).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 });
 
-// [2단계] 필터링된 데이터에서 현재 페이지에 해당하는 데이터만 추출
 const paginatedData = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value;
   const end = start + pageSize.value;
@@ -141,13 +143,12 @@ const paginatedData = computed(() => {
 });
 
 const applyFilters = () => {
-  currentPage.value = 1; // 필터 적용 시 1페이지로 이동
+  currentPage.value = 1;
   finalStartDate.value = startDate.value;
   finalEndDate.value = endDate.value;
   finalSearchQuery.value = tempSearchQuery.value;
   finalFilterBlueChip.value = tempFilterBlueChip.value;
   finalFilterLowPer.value = tempFilterLowPer.value;
-  
   if (allRawData.value.length === 0) fetchStocks();
 };
 
@@ -208,6 +209,7 @@ onMounted(fetchStocks);
 </script>
 
 <style scoped>
+/* 이전 스타일 유지 */
 .dashboard-wrapper { height: 100vh; background-color: #f5f7fa; display: flex; overflow: hidden; }
 .sidebar { background: #fff; border-right: 1px solid #dcdfe6; padding: 20px; }
 .brand { color: #409eff; font-size: 1.4rem; margin-bottom: 25px; text-align: center; font-weight: bold; }
