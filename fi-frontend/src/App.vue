@@ -1,29 +1,15 @@
 <template>
-  <el-container class="dashboard-wrapper" v-loading="loading" element-loading-text="데이터를 불러오는 중입니다...">
+  <el-container class="dashboard-wrapper" v-loading="loading" element-loading-text="데이터를 분석 중입니다...">
     <el-aside width="280px" class="sidebar">
       <div class="sidebar-header"><h2 class="brand">FI Analysis</h2></div>
       
       <el-form class="filter-form" label-position="top" @submit.prevent>
         <el-divider content-position="left">조회 기간</el-divider>
         <el-form-item label="시작일자">
-          <el-date-picker 
-            v-model="startDate" 
-            type="date" 
-            placeholder="시작일 선택" 
-            format="YYYY-MM-DD" 
-            value-format="YYYY-MM-DD" 
-            class="w-100" 
-          />
+          <el-date-picker v-model="startDate" type="date" placeholder="시작일" format="YYYY-MM-DD" value-format="YYYY-MM-DD" class="w-100" />
         </el-form-item>
         <el-form-item label="종료일자">
-          <el-date-picker 
-            v-model="endDate" 
-            type="date" 
-            placeholder="종료일 선택" 
-            format="YYYY-MM-DD" 
-            value-format="YYYY-MM-DD" 
-            class="w-100" 
-          />
+          <el-date-picker v-model="endDate" type="date" placeholder="종료일" format="YYYY-MM-DD" value-format="YYYY-MM-DD" class="w-100" />
         </el-form-item>
 
         <el-divider content-position="left">종목 선택</el-divider>
@@ -42,6 +28,10 @@
         <el-button type="primary" class="w-100" @click="applyFilters" :disabled="loading">
           데이터 적용 및 새로고침
         </el-button>
+        
+        <el-button type="success" class="w-100 mt-2" @click="exportToExcel" :disabled="loading || filteredData.length === 0">
+          엑셀 데이터 내보내기
+        </el-button>
       </el-form>
     </el-aside>
 
@@ -50,25 +40,12 @@
         <el-card class="section-card">
           <template #header>
             <div class="card-header">
-              <span class="title-text">전체 데이터 영역</span>
-              <div>
-                <el-tag v-if="finalStartDate || finalEndDate" type="warning" class="mx-1">
-                  {{ finalStartDate || '시작' }} ~ {{ finalEndDate || '종료' }}
-                </el-tag>
-                <el-tag type="success">검색 결과: {{ filteredData.length }}건</el-tag>
-              </div>
+              <span class="title-text">전체 데이터 상세 영역</span>
+              <el-tag type="success">검색 결과: {{ filteredData.length }}건</el-tag>
             </div>
           </template>
           
-          <el-table 
-            :data="paginatedData" 
-            stripe 
-            height="450" 
-            border 
-            style="width: 100%" 
-            highlight-current-row
-            @current-change="handleRowClick"
-          >
+          <el-table :data="paginatedData" stripe height="420" border style="width: 100%" highlight-current-row @current-change="handleRowClick">
             <el-table-column label="No." width="70" align="center" fixed>
               <template #default="scope">
                 {{ (currentPage - 1) * pageSize + scope.$index + 1 }}
@@ -79,13 +56,13 @@
             <el-table-column prop="name" label="Name" width="130" show-overflow-tooltip />
             <el-table-column prop="date" label="Date" width="110" sortable />
             
-            <el-table-column label="USD Price" width="130" align="right">
+            <el-table-column label="USD Price" width="120" align="right">
               <template #default="scope">
                 <span class="currency-usd">{{ formatCurrency(scope.row.usd_price || scope.row.price, '$') }}</span>
               </template>
             </el-table-column>
 
-            <el-table-column label="KRW Price" width="140" align="right">
+            <el-table-column label="KRW Price" width="130" align="right">
               <template #default="scope">
                 <span class="currency-krw">{{ formatCurrency(scope.row.krw_price, '', '원') }}</span>
               </template>
@@ -111,6 +88,12 @@
         </el-card>
 
         <el-card class="section-card chart-container">
+          <template #header>
+            <div class="card-header">
+              <span class="title-text">가격 추이 분석 (KRW / USD 비교)</span>
+              <el-tag v-if="selectedStock" type="info">{{ selectedStock.ticker }} 분석 중</el-tag>
+            </div>
+          </template>
           <div class="canvas-wrapper"><canvas id="mainPriceChart"></canvas></div>
         </el-card>
       </el-main>
@@ -119,21 +102,20 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import axios from 'axios';
 import Chart from 'chart.js/auto';
+import * as XLSX from 'xlsx'; // [추가] 엑셀 라이브러리 임포트
 
-// --- 상태 정의 ---
+// --- 기본 상태 ---
 const allRawData = ref([]); 
 const loading = ref(false);
 const selectedStock = ref(null);
 let chartInstance = null;
 
-// 페이지네이션 관련
 const currentPage = ref(1);
 const pageSize = ref(50);
 
-// 필터 임시/최종 값
 const startDate = ref('');
 const endDate = ref('');
 const tempSearchQuery = ref('');
@@ -148,28 +130,21 @@ const finalFilterLowPer = ref(false);
 
 const API_URL = 'https://sj-fi.onrender.com/stocks';
 
-// --- 유틸리티 함수 ---
-
-// 통화 포맷: 소수점 2자리 + 콤마 + 단위
+// --- 포맷팅 함수 ---
 const formatCurrency = (val, prefix = '', suffix = '') => {
-  if (val === undefined || val === null || val === 0) return prefix + ' 0.00 ' + suffix;
+  if (!val) return prefix + ' 0.00 ' + suffix;
   const num = parseFloat(val);
-  if (isNaN(num)) return prefix + ' 0.00 ' + suffix;
-  
   const parts = num.toFixed(2).split('.');
   parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   return `${prefix}${parts.join('.')}${suffix}`;
 };
 
-// --- Computed 로직 (성능 최적화) ---
-
-// 사이드바 콤보박스용 티커 리스트
+// --- 데이터 처리 ---
 const tickerList = computed(() => {
   const tickers = allRawData.value.map(item => (item.ticker || item.Ticker || '').trim().toUpperCase());
   return [...new Set(tickers)].filter(Boolean).sort();
 });
 
-// 전체 데이터 필터링 (메모리 부하 방지를 위해 필터링만 수행)
 const filteredData = computed(() => {
   return allRawData.value.filter(item => {
     const t = (item.ticker || item.Ticker || '').trim().toUpperCase();
@@ -187,43 +162,61 @@ const filteredData = computed(() => {
   }).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 });
 
-// 현재 페이지에 보여줄 데이터 조각
 const paginatedData = computed(() => {
   const start = (currentPage.value - 1) * pageSize.value;
-  const end = start + pageSize.value;
-  return filteredData.value.slice(start, end);
+  return filteredData.value.slice(start, start + pageSize.value);
 });
 
-// --- 이벤트 핸들러 ---
+// --- 메서드 ---
+
+// [추가] 엑셀 내보내기 기능
+const exportToExcel = () => {
+  if (filteredData.value.length === 0) return;
+
+  // 1. 저장할 데이터 정제
+  const exportData = filteredData.value.map((item, index) => ({
+    "No": index + 1,
+    "Ticker": item.ticker || item.Ticker,
+    "Name": item.name,
+    "Date": item.date,
+    "USD Price": item.usd_price || item.price,
+    "KRW Price": item.krw_price,
+    "PER": item.per,
+    "ROE (%)": item.roe,
+    "PEG": item.peg,
+    "Dividend Yield": item.dividend_yield
+  }));
+
+  // 2. 워크시트 생성
+  const worksheet = XLSX.utils.json_to_sheet(exportData);
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "StockData");
+
+  // 3. 파일 저장 (파일명에 오늘 날짜 포함)
+  const fileName = `FI_Stock_Export_${new Date().toISOString().slice(0, 10)}.xlsx`;
+  XLSX.writeFile(workbook, fileName);
+};
 
 const applyFilters = () => {
-  currentPage.value = 1; // 필터 변경 시 무조건 1페이지로
+  currentPage.value = 1;
   finalStartDate.value = startDate.value;
   finalEndDate.value = endDate.value;
   finalSearchQuery.value = tempSearchQuery.value;
   finalFilterBlueChip.value = tempFilterBlueChip.value;
   finalFilterLowPer.value = tempFilterLowPer.value;
-  
-  // 데이터가 없을 때만 새로 불러오고, 있을 때는 필터링만 적용(이미 Computed에서 처리됨)
   if (allRawData.value.length === 0) fetchStocks();
 };
 
-const handleSizeChange = (val) => {
-  pageSize.value = val;
-  currentPage.value = 1;
-};
-
-const handleCurrentChange = (val) => {
-  currentPage.value = val;
-};
+const handleSizeChange = (val) => { pageSize.value = val; currentPage.value = 1; };
+const handleCurrentChange = (val) => { currentPage.value = val; };
 
 const fetchStocks = async () => {
   loading.value = true;
   try {
-    const response = await axios.get(API_URL, { timeout: 30000 });
+    const response = await axios.get(API_URL);
     allRawData.value = Array.isArray(response.data) ? response.data : (response.data.stocks || []);
   } catch (error) {
-    console.error("데이터 로드 실패:", error);
+    console.error("Fetch Error:", error);
   } finally {
     loading.value = false;
   }
@@ -236,13 +229,11 @@ const handleRowClick = (row) => {
   }
 };
 
-// 차트 업데이트 (Y축 KRW 표시)
 const updateChart = (ticker) => {
   const ctx = document.getElementById('mainPriceChart')?.getContext('2d');
   if (!ctx || !ticker) return;
   if (chartInstance) chartInstance.destroy();
 
-  // 선택된 종목의 전체 이력 (최대 50개)
   const history = filteredData.value
     .filter(s => (s.ticker || s.Ticker) === ticker)
     .sort((a, b) => a.date.localeCompare(b.date))
@@ -252,30 +243,49 @@ const updateChart = (ticker) => {
     type: 'line',
     data: {
       labels: history.map(h => h.date),
-      datasets: [{
-        label: `${ticker} 원화 가격 추이`,
-        data: history.map(h => h.krw_price || 0),
-        borderColor: '#409eff',
-        backgroundColor: 'rgba(64, 158, 255, 0.1)',
-        fill: true,
-        tension: 0.3
-      }]
+      datasets: [
+        {
+          label: 'KRW Price (원)',
+          data: history.map(h => h.krw_price || 0),
+          borderColor: '#409eff',
+          backgroundColor: 'rgba(64, 158, 255, 0.1)',
+          yAxisID: 'y-krw',
+          fill: true,
+          tension: 0.3
+        },
+        {
+          label: 'USD Price ($)',
+          data: history.map(h => h.usd_price || h.price || 0),
+          borderColor: '#67c23a',
+          borderDash: [5, 5],
+          yAxisID: 'y-usd',
+          fill: false,
+          tension: 0.3
+        }
+      ]
     },
-    options: { 
-      responsive: true, 
+    options: {
+      responsive: true,
       maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
       plugins: {
         tooltip: {
           callbacks: {
-            label: (context) => `가격: ${context.parsed.y.toLocaleString()} 원`
+            label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}${ctx.datasetIndex === 0 ? ' 원' : ' $'}`
           }
         }
       },
       scales: {
-        y: {
-          ticks: {
-            callback: (val) => val.toLocaleString() + ' 원'
-          }
+        'y-krw': {
+          type: 'linear', position: 'left',
+          title: { display: true, text: 'KRW (원)' },
+          ticks: { callback: (val) => val.toLocaleString() + ' ₩' }
+        },
+        'y-usd': {
+          type: 'linear', position: 'right',
+          title: { display: true, text: 'USD ($)' },
+          ticks: { callback: (val) => '$ ' + val.toFixed(2) },
+          grid: { drawOnChartArea: false }
         }
       }
     }
@@ -292,13 +302,12 @@ onMounted(fetchStocks);
 .main-content { display: flex; flex-direction: column; flex: 1; min-width: 0; }
 .scroll-area { padding: 20px; overflow-y: auto; }
 .section-card { margin-bottom: 20px; border-radius: 8px; }
-.title-text { font-weight: bold; font-size: 16px; color: #303133; }
 .card-header { display: flex; justify-content: space-between; align-items: center; }
-.pagination-container { margin-top: 20px; display: flex; justify-content: center; }
-.chart-container { height: 380px; }
+.pagination-container { margin-top: 15px; display: flex; justify-content: center; }
+.chart-container { height: 400px; }
 .canvas-wrapper { height: 320px; }
 .w-100 { width: 100%; }
-.mx-1 { margin-left: 4px; }
-.currency-usd { color: #67c23a; font-weight: bold; font-family: 'Courier New', Courier, monospace; }
+.mt-2 { margin-top: 10px; }
+.currency-usd { color: #67c23a; font-weight: bold; }
 .currency-krw { color: #409eff; font-weight: bold; }
 </style>
