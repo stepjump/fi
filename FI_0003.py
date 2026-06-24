@@ -8,10 +8,24 @@
 
 import sqlite3
 import os
+import sys
+
+
 
 def create_total_info_table():
     # 이 파일(FI-WEB1.py)이 있는 절대 경로를 구함
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+    # 1. 실행 파일(.exe)로 실행되는지, 스크립트(.py)로 실행되는지 확인하여 경로 분기
+    if getattr(sys, 'frozen', False):
+        # PyInstaller로 만든 실행 파일(.exe)로 실행될 때
+        # sys.executable은 현재 실행 중인 .exe 파일의 절대 경로를 반환합니다.
+        BASE_DIR = os.path.dirname(sys.executable)
+    else:
+        # VS Code 등에서 파이썬 스크립트(.py)로 실행될 때
+        BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
     # DB 파일의 전체 경로를 만
     db_path = os.path.join(BASE_DIR, 'FI.db')
 
