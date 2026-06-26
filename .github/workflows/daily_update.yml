@@ -36,3 +36,15 @@ jobs:
       with:
         name: database-artifact  # 다운로드받을 폴더(압축파일) 이름
         path: FI.db              # 저장할 파일 경로 (main.py와 같은 위치에 생기는 경우)
+
+    - name: 생성된 DB 파일을 저장소에 커밋 및 푸시
+        run: |
+            git config --local user.email "github-actions[bot]@users.noreply.github.com"
+            git config --local user.name "github-actions[bot]"
+            git add FI.db
+            # 변경 사항이 있을 때만 커밋하고, 없으면 에러 없이 통과합니다.
+            git commit -m "자동 업데이트: FI.db 파일 갱신" || echo "변경 사항 없음"
+            
+
+        
+        git push
