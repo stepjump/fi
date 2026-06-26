@@ -1,0 +1,32 @@
+name: Python Script Automation
+
+on:
+  push:
+    branches: [ "main" ]
+  schedule:
+    # 매일 자정(UTC 기준)에 자동 실행되도록 설정하는 예시입니다. 필요에 따라 변경하세요.
+    - cron: '0 0 * * *'
+
+jobs:
+  run-python-script:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 저장소 체크아웃 (코드 가져오기)
+      uses: actions/checkout@v4
+
+    - name: 파이썬 환경 설정
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12.10" # 사용하시는 파이썬 버전에 맞게 수정하세요.
+
+    - name: 필요한 패키지 설치
+      run: |
+        python -m pip install --upgrade pip
+        # requirements.txt 파일이 있으면 패키지를 설치합니다.
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+    - name: 파이썬 스크립트 실행
+      run: |
+        # 실행할 파이썬 파일의 이름을 지정합니다 (예: TEST_API.py 또는 main.py)
+        python main.py
