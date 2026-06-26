@@ -30,3 +30,9 @@ jobs:
       run: |
         # 실행할 파이썬 파일의 이름을 지정합니다 (예: TEST_API.py 또는 main.py)
         python ALL_RUN.py
+
+    - name: 생성된 SQLite DB 파일 업로드
+      uses: actions/upload-artifact@v4
+      with:
+        name: database-artifact  # 다운로드받을 폴더(압축파일) 이름
+        path: FI.db              # 저장할 파일 경로 (main.py와 같은 위치에 생기는 경우)
