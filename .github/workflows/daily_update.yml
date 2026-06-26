@@ -29,4 +29,4 @@ jobs:
     - name: 파이썬 스크립트 실행
       run: |
         # 실행할 파이썬 파일의 이름을 지정합니다 (예: TEST_API.py 또는 main.py)
-        python main.py
+        python ALL_RUN.py
