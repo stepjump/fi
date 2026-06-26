@@ -1,0 +1,9 @@
+SELECT A.*, B.close, B.PER, B.PBR, B.PSR, B.PCR, B.ROE, B.EPS, B.PEG, B.DIVIDEND_YIELD
+FROM daily_prices A
+    ,daily_prices2 B
+WHERE A.ticker = B.ticker
+AND A.date = B.date
+AND A.date = '2026-02-23'
+ORDER BY date desc
+
+

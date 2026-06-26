@@ -1,0 +1,18 @@
+CREATE TABLE daily_total_info (
+    ticker         VARCHAR2(20),
+    name           VARCHAR2(100),
+    info_date      VARCHAR2(20),   -- DATE는 오라클 예약어이므로 이름 변경
+    usd_price      NUMBER,
+    krw_price      NUMBER,
+    close_price    NUMBER,         -- CLOSE 역시 키워드이므로 이름 변경 권장
+    per            NUMBER,
+    pbr            NUMBER,
+    psr            NUMBER,
+    pcr            NUMBER,
+    roe            NUMBER,
+    eps            NUMBER,
+    peg            NUMBER,
+    dividend_yield NUMBER
+);
+
+SELECT * FROM daily_total_info

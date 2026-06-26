@@ -1,0 +1,8 @@
+# 기존에 켜진 스트림릿이 있다면 종료
+pkill -f streamlit
+
+# 가상환경 활성화
+source venv/bin/activate
+
+# 외부 접속 허용 옵션을 포함하여 실행
+streamlit run FI-WEB1.py --server.port 8501 --server.address 0.0.0.0

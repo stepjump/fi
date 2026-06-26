@@ -1,0 +1,9 @@
+1. requirement.txt 만들기
+	python 프로젝트의 의존성 정보가 담긴 문서 작성
+
+pip freeze > requirements.txt
+
+
+2. github에 푸시
+
+

@@ -1,0 +1,28 @@
+=====================================================================================================
+[데이타베이스 서비스]
+https://supabase.com/
+
+**Supabase 홈페이지**에 접속하여 무료 계정을 생성합니다.
+
+New Project를 생성하면 Database URL과 API Key가 생성됩니다.
+
+이 정보들을 Streamlit Cloud의 Settings > Secrets에 저장합니다.
+
+=====================================================================================================
+
+SUPABASE_URL = "'https://yftadbxkscbmbdjvlnom.supabase.co'"
+SUPABASE_KEY = "복사한 anon key"
+
+=====================================================================================================
+
+
+
+=====================================================================================================
+[데이타베이스 서비스]c
+https://console.neon.tech/		패스워드 npg_WdwgbE9SXQA5
+=====================================================================================================
+
+[Connection string]
+postgresql://neondb_owner:npg_RlhFPDAzTi93@ep-icy-moon-a13dxdcy-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+
+
