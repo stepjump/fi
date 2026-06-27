@@ -39,8 +39,8 @@ jobs:
 
     - name: 생성된 DB 파일을 저장소에 커밋 및 푸시
         run: |
-             git config --global user.name "stepjump-code"
-             git config --global user.email "stepjump@gmail.com"
-             git add FI.db
-             git commit -m "Auto-update FI.db after Python script run"
-             git push
+          git config --global user.name "stepjump-code"
+          git config --global user.email "stepjump@gmail.com"
+          git add FI.db
+          git commit -m "Auto-update FI.db after Python script run" || echo "변경 사항 없음"
+          git push
